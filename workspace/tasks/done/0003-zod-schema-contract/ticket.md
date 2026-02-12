@@ -65,3 +65,4 @@ const RegionPropertiesSchema = z.object({
 ## History
 
 - 2026-02-12 Created from brutal-plan PLAN-0001
+- 2026-02-12 Completed: schema, topology validator, factory function, 21 tests passing
