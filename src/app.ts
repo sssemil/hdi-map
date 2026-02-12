@@ -6,8 +6,10 @@ import { searchRegions, buildSearchIndex, type SearchIndex } from './region-sear
 import { PALETTES, DEFAULT_PALETTE_ID, getPaletteById, type PaletteId } from './palette-registry';
 import { getRegionSource } from './region-supplements';
 import { createValueLoader } from './value-loader';
-import { getIndexById, DEFAULT_INDEX_ID } from './index-registry';
+import { getIndexById, DEFAULT_INDEX_ID, INDICES, type IndexId, type IndexDefinition } from './index-registry';
+import { createGetValue } from './get-value-accessor';
 import type { HdiValues } from './schemas/hdi-values.schema';
+import type { RegionProperties } from './schemas/region-properties.schema';
 
 const DATA_URL = `${import.meta.env.BASE_URL}data/regions.topo.json`;
 
@@ -202,7 +204,7 @@ const createPalettePicker = (
 ): void => {
   const wrapper = document.createElement('div');
   wrapper.style.cssText =
-    'position:absolute;top:16px;left:16px;z-index:50';
+    'position:absolute;top:52px;left:16px;z-index:50';
 
   const select = document.createElement('select');
   select.style.cssText =
@@ -224,6 +226,60 @@ const createPalettePicker = (
 
   wrapper.appendChild(select);
   container.appendChild(wrapper);
+};
+
+const createIndexSwitcher = (
+  container: HTMLElement,
+  currentIndexId: IndexId,
+  onChange: (indexId: IndexId) => void
+): void => {
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText =
+    'position:absolute;top:16px;left:16px;z-index:50';
+
+  const select = document.createElement('select');
+  select.style.cssText =
+    'padding:6px 10px;background:rgba(10,10,46,0.9);color:#e0e0e0;' +
+    'border:1px solid rgba(255,255,255,0.15);border-radius:6px;font-size:13px;' +
+    'cursor:pointer;outline:none';
+
+  INDICES.forEach((idx) => {
+    const option = document.createElement('option');
+    option.value = idx.id;
+    option.textContent = idx.label;
+    option.selected = idx.id === currentIndexId;
+    select.appendChild(option);
+  });
+
+  select.addEventListener('change', () => {
+    onChange(select.value as IndexId);
+  });
+
+  wrapper.appendChild(select);
+  container.appendChild(wrapper);
+};
+
+const formatGenericTooltip = (
+  properties: RegionProperties,
+  value: number | null,
+  indexDef: IndexDefinition,
+  source?: string
+): string => {
+  const titleHtml = properties.level === 'national' || properties.name === properties.country
+    ? `<div><strong>${properties.name}</strong></div>`
+    : `<div><strong>${properties.name}</strong>, ${properties.country}</div>`;
+
+  const valueHtml = value !== null
+    ? `<div>${indexDef.label}: ${value.toFixed(1)}</div>`
+    : '<div>No data available</div>';
+
+  const noteHtml = properties.level === 'national'
+    ? '<div class="tooltip-note">Country-level data</div>'
+    : '';
+
+  const sourceHtml = source ? `<div class="tooltip-source">Source: ${source}</div>` : '';
+
+  return [titleHtml, valueHtml, noteHtml, sourceHtml].filter(Boolean).join('');
 };
 
 const createInfoPanel = (container: HTMLElement): void => {
@@ -337,40 +393,53 @@ export const initApp = async (container: HTMLElement): Promise<void> => {
 
   try {
     const valueLoader = createValueLoader();
-    const indexDef = getIndexById(DEFAULT_INDEX_ID);
+    let currentIndexDef = getIndexById(DEFAULT_INDEX_ID);
+    let currentPaletteId = DEFAULT_PALETTE_ID;
 
-    const [{ regions }, hdiValues] = await Promise.all([
+    const [{ regions }, initialValues] = await Promise.all([
       loadMapData(DATA_URL),
-      valueLoader.loadValues(DEFAULT_INDEX_ID) as Promise<HdiValues>,
+      valueLoader.loadValues(DEFAULT_INDEX_ID),
     ]);
 
     loading.remove();
 
+    let currentGetValue = createGetValue({
+      indexId: DEFAULT_INDEX_ID,
+      values: initialValues,
+    });
+
     let currentScale = createColorScale({
-      interpolator: getPaletteById(DEFAULT_PALETTE_ID).interpolator,
-      binDefinitions: indexDef.binDefinitions,
+      interpolator: getPaletteById(currentPaletteId).interpolator,
+      binDefinitions: currentIndexDef.binDefinitions,
     });
 
     const tooltipController = createTooltipController(mapContainer);
 
-    const hdiGetValue = (gdlCode: string, _countryIso: string): number | null =>
-      hdiValues[gdlCode]?.hdi ?? null;
+    const formatTooltip = (properties: RegionProperties, gdlCode: string): string => {
+      const source = getRegionSource(gdlCode);
+      if (currentIndexDef.id === 'hdi') {
+        const hdiValues = valueLoader.getCachedValues('hdi') as HdiValues | null;
+        return formatHdiTooltip({
+          properties,
+          hdiValue: hdiValues?.[gdlCode],
+          source,
+        });
+      }
+      const value = currentGetValue(gdlCode, properties.countryIso);
+      return formatGenericTooltip(properties, value, currentIndexDef, source);
+    };
 
     const renderer: MapRenderer = createMapRenderer({
       container: mapContainer,
       regions,
       getColor: currentScale.getColor,
-      getValue: hdiGetValue,
+      getValue: currentGetValue,
       onRegionHover: (feature, event) => {
         if (feature) {
           const rect = mapContainer.getBoundingClientRect();
           const gdlCode = feature.properties.gdlCode;
           tooltipController.show(
-            formatHdiTooltip({
-              properties: feature.properties,
-              hdiValue: hdiValues[gdlCode],
-              source: getRegionSource(gdlCode),
-            }),
+            formatTooltip(feature.properties, gdlCode),
             event.clientX - rect.left,
             event.clientY - rect.top
           );
@@ -386,14 +455,32 @@ export const initApp = async (container: HTMLElement): Promise<void> => {
       renderer.highlightRegions(filter);
     };
 
-    let legendElement = createLegend(mapContainer, indexDef.legendTitle, currentScale.bins, onBinHover);
+    let legendElement = createLegend(mapContainer, currentIndexDef.legendTitle, currentScale.bins, onBinHover);
 
-    createPalettePicker(mapContainer, (paletteId) => {
-      const palette = getPaletteById(paletteId);
-      currentScale = createColorScale({ interpolator: palette.interpolator, binDefinitions: indexDef.binDefinitions });
+    const rebuildScale = (): void => {
+      currentScale = createColorScale({
+        interpolator: getPaletteById(currentPaletteId).interpolator,
+        binDefinitions: currentIndexDef.binDefinitions,
+      });
       renderer.updateColors(currentScale.getColor);
       legendElement.remove();
-      legendElement = createLegend(mapContainer, indexDef.legendTitle, currentScale.bins, onBinHover);
+      legendElement = createLegend(mapContainer, currentIndexDef.legendTitle, currentScale.bins, onBinHover);
+    };
+
+    createIndexSwitcher(mapContainer, DEFAULT_INDEX_ID, async (indexId) => {
+      const newIndexDef = getIndexById(indexId);
+      const values = await valueLoader.loadValues(indexId);
+
+      currentIndexDef = newIndexDef;
+      currentGetValue = createGetValue({ indexId, values });
+
+      renderer.updateValues(currentGetValue);
+      rebuildScale();
+    });
+
+    createPalettePicker(mapContainer, (paletteId) => {
+      currentPaletteId = paletteId;
+      rebuildScale();
     });
 
     const searchableRegions = regions.map((f) => ({
