@@ -562,6 +562,36 @@ const showErrorState = (container: HTMLElement, message: string): void => {
   container.appendChild(error);
 };
 
+const createLoadingOverlay = (container: HTMLElement) => {
+  const overlay = document.createElement('div');
+  overlay.style.cssText =
+    'display:none;position:absolute;inset:0;background:rgba(0,0,0,0.3);z-index:150;' +
+    'align-items:center;justify-content:center';
+  overlay.innerHTML =
+    '<div style="width:32px;height:32px;border:3px solid rgba(255,255,255,0.15);' +
+    'border-top-color:#cc4778;border-radius:50%;animation:spin 0.8s linear infinite"></div>';
+  container.appendChild(overlay);
+
+  return {
+    show: (): void => { overlay.style.display = 'flex'; },
+    hide: (): void => { overlay.style.display = 'none'; },
+  };
+};
+
+const showToast = (container: HTMLElement, message: string): void => {
+  const toast = document.createElement('div');
+  toast.style.cssText =
+    'position:absolute;bottom:60px;left:50%;transform:translateX(-50%);z-index:200;' +
+    'background:rgba(180,40,40,0.92);color:#fff;padding:10px 20px;border-radius:6px;' +
+    'font-size:13px;max-width:400px;text-align:center;opacity:1;transition:opacity 0.3s';
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 300);
+  }, 5000);
+};
+
 export const initApp = async (container: HTMLElement): Promise<void> => {
   const mapContainer = container.querySelector<HTMLElement>('#map-container');
   if (!mapContainer) return;
@@ -585,6 +615,9 @@ export const initApp = async (container: HTMLElement): Promise<void> => {
     ]);
 
     loading.remove();
+
+    const switchOverlay = createLoadingOverlay(mapContainer);
+    let loadGeneration = 0;
 
     const updateUrlHash = (): void => {
       const hash = toUrlHash({ indexId: currentIndexDef.id, dimensionId: currentDimensionId });
@@ -695,23 +728,38 @@ export const initApp = async (container: HTMLElement): Promise<void> => {
 
     createIndexSwitcher(mapContainer, initialIndexId, async (indexId) => {
       const newIndexDef = getIndexById(indexId);
-      const values = await valueLoader.loadValues(indexId);
+      const thisGeneration = ++loadGeneration;
 
-      currentIndexDef = newIndexDef;
-      currentDimensionId = undefined;
-      currentGetValue = createGetValue({ indexId, values, weights: currentWeights });
+      switchOverlay.show();
 
-      renderer.updateValues(currentGetValue);
-      rebuildScale();
+      try {
+        const values = await valueLoader.loadValues(indexId);
 
-      if (newIndexDef.dimensions) {
-        dimensionSelector.show(newIndexDef.dimensions);
-        weightSliders.show();
-      } else {
-        dimensionSelector.hide();
-        weightSliders.hide();
+        if (thisGeneration !== loadGeneration) return;
+
+        currentIndexDef = newIndexDef;
+        currentDimensionId = undefined;
+        currentGetValue = createGetValue({ indexId, values, weights: currentWeights });
+
+        renderer.updateValues(currentGetValue);
+        rebuildScale();
+
+        if (newIndexDef.dimensions) {
+          dimensionSelector.show(newIndexDef.dimensions);
+          weightSliders.show();
+        } else {
+          dimensionSelector.hide();
+          weightSliders.hide();
+        }
+        updateUrlHash();
+      } catch (err) {
+        if (thisGeneration !== loadGeneration) return;
+        showToast(mapContainer, `Failed to load ${newIndexDef.label} data. Try again later.`);
+      } finally {
+        if (thisGeneration === loadGeneration) {
+          switchOverlay.hide();
+        }
       }
-      updateUrlHash();
     });
 
     createPalettePicker(mapContainer, (paletteId) => {
