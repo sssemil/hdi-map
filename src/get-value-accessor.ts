@@ -2,6 +2,7 @@ import type { IndexId } from './index-registry';
 import type { HdiValues } from './schemas/hdi-values.schema';
 import type { WhrValues } from './schemas/whr-values.schema';
 import type { OecdBliValues, OecdBliRegionValue } from './schemas/oecd-bli-values.schema';
+import { computeWeightedAverage, EQUAL_WEIGHTS, type DimensionWeights } from './weighted-average';
 
 type GetValueFn = (gdlCode: string, countryIso: string) => number | null;
 
@@ -9,13 +10,8 @@ type CreateGetValueOptions = {
   readonly indexId: IndexId;
   readonly values: Record<string, unknown>;
   readonly dimensionId?: string;
+  readonly weights?: DimensionWeights;
 };
-
-const OECD_DIMENSION_KEYS: readonly (keyof OecdBliRegionValue)[] = [
-  'income', 'jobs', 'housing', 'education', 'health',
-  'environment', 'safety', 'civicEngagement', 'accessToServices',
-  'community', 'lifeSatisfaction',
-];
 
 const DIMENSION_ID_TO_KEY: Record<string, keyof OecdBliRegionValue> = {
   income: 'income',
@@ -31,18 +27,8 @@ const DIMENSION_ID_TO_KEY: Record<string, keyof OecdBliRegionValue> = {
   'life-satisfaction': 'lifeSatisfaction',
 };
 
-const computeOecdWeightedAverage = (entry: OecdBliRegionValue): number | null => {
-  const validValues = OECD_DIMENSION_KEYS
-    .map((k) => entry[k])
-    .filter((v): v is number => v !== null);
-
-  if (validValues.length === 0) return null;
-
-  return validValues.reduce((sum, v) => sum + v, 0) / validValues.length;
-};
-
 export const createGetValue = (options: CreateGetValueOptions): GetValueFn => {
-  const { indexId, values, dimensionId } = options;
+  const { indexId, values, dimensionId, weights = EQUAL_WEIGHTS } = options;
 
   if (indexId === 'hdi') {
     const hdiValues = values as HdiValues;
@@ -67,6 +53,6 @@ export const createGetValue = (options: CreateGetValueOptions): GetValueFn => {
   return (_gdlCode: string, countryIso: string): number | null => {
     const entry = oecdValues[countryIso];
     if (!entry) return null;
-    return computeOecdWeightedAverage(entry);
+    return computeWeightedAverage({ values: entry, weights });
   };
 };
