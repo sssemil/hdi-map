@@ -1,5 +1,5 @@
 import { loadMapData } from './data-loader';
-import { createColorScale, NO_DATA_COLOR, type HdiBin } from './color-scale';
+import { createColorScale, NO_DATA_COLOR, type Bin } from './color-scale';
 import { createMapRenderer, type MapRenderer } from './map-renderer';
 import { formatTooltipContent } from './tooltip';
 import { searchRegions, buildSearchIndex, type SearchIndex } from './region-search';
@@ -44,7 +44,7 @@ const createTooltipController = (container: HTMLElement) => {
 
 const createLegend = (
   container: HTMLElement,
-  bins: readonly HdiBin[],
+  bins: readonly Bin[],
   onBinHover: (filter: { min: number; max: number } | null) => void
 ): HTMLElement => {
   const legend = document.createElement('div');

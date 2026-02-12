@@ -1,6 +1,6 @@
 import { interpolatePlasma } from 'd3-scale-chromatic';
 
-export type HdiBin = {
+export type Bin = {
   readonly min: number;
   readonly max: number;
   readonly color: string;
@@ -10,13 +10,13 @@ export type HdiBin = {
 export type Interpolator = (t: number) => string;
 
 export type ColorScale = {
-  readonly bins: readonly HdiBin[];
+  readonly bins: readonly Bin[];
   readonly getColor: (hdi: number | null) => string;
 };
 
 export const NO_DATA_COLOR = '#555';
 
-const BIN_DEFINITIONS: readonly {
+export const HDI_BIN_DEFINITIONS: readonly {
   readonly min: number;
   readonly max: number;
   readonly samplePoint: number;
@@ -33,7 +33,7 @@ const BIN_DEFINITIONS: readonly {
 ];
 
 export const createColorScale = (interpolator: Interpolator): ColorScale => {
-  const bins: readonly HdiBin[] = BIN_DEFINITIONS.map((def) => ({
+  const bins: readonly Bin[] = HDI_BIN_DEFINITIONS.map((def) => ({
     min: def.min,
     max: def.max,
     color: interpolator(def.samplePoint),
@@ -59,5 +59,5 @@ export const createColorScale = (interpolator: Interpolator): ColorScale => {
 
 const defaultScale = createColorScale(interpolatePlasma);
 
-export const HDI_BINS: readonly HdiBin[] = defaultScale.bins;
+export const HDI_BINS: readonly Bin[] = defaultScale.bins;
 export const getColor = defaultScale.getColor;
