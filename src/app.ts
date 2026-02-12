@@ -1,7 +1,7 @@
 import { loadMapData } from './data-loader';
 import { createColorScale, NO_DATA_COLOR, type Bin } from './color-scale';
 import { createMapRenderer, type MapRenderer } from './map-renderer';
-import { formatHdiTooltip } from './tooltip';
+import { formatHdiTooltip, formatWhrTooltip, formatOecdTooltip } from './tooltip';
 import { searchRegions, buildSearchIndex, type SearchIndex } from './region-search';
 import { PALETTES, DEFAULT_PALETTE_ID, getPaletteById, type PaletteId } from './palette-registry';
 import { getRegionSource } from './region-supplements';
@@ -10,6 +10,8 @@ import { getIndexById, INDICES, type IndexId, type IndexDefinition } from './ind
 import { createGetValue } from './get-value-accessor';
 import { EQUAL_WEIGHTS, redistributeWeights, normalizeWeights, type DimensionWeights } from './weighted-average';
 import type { HdiValues } from './schemas/hdi-values.schema';
+import type { WhrValues } from './schemas/whr-values.schema';
+import type { OecdBliValues } from './schemas/oecd-bli-values.schema';
 import type { RegionProperties } from './schemas/region-properties.schema';
 import { parseUrlHash, toUrlHash } from './url-state';
 
@@ -639,6 +641,7 @@ export const initApp = async (container: HTMLElement): Promise<void> => {
 
     const formatTooltip = (properties: RegionProperties, gdlCode: string): string => {
       const source = getRegionSource(gdlCode);
+
       if (currentIndexDef.id === 'hdi') {
         const hdiValues = valueLoader.getCachedValues('hdi') as HdiValues | null;
         return formatHdiTooltip({
@@ -647,6 +650,33 @@ export const initApp = async (container: HTMLElement): Promise<void> => {
           source,
         });
       }
+
+      if (currentIndexDef.id === 'whr') {
+        const whrValues = valueLoader.getCachedValues('whr') as WhrValues | null;
+        return formatWhrTooltip({
+          properties,
+          whrValue: whrValues?.[properties.countryIso],
+          source,
+        });
+      }
+
+      if (currentIndexDef.id === 'oecd-bli') {
+        const oecdValues = valueLoader.getCachedValues('oecd-bli') as OecdBliValues | null;
+        const oecdValue = oecdValues?.[properties.countryIso];
+        const value = currentGetValue(gdlCode, properties.countryIso);
+        const dimensionDef = currentDimensionId
+          ? currentIndexDef.dimensions?.find((d) => d.id === currentDimensionId)
+          : undefined;
+
+        return formatOecdTooltip({
+          properties,
+          oecdValue,
+          dimensionLabel: dimensionDef?.label,
+          compositeScore: !dimensionDef && value !== null ? value : undefined,
+          source,
+        });
+      }
+
       const value = currentGetValue(gdlCode, properties.countryIso);
       return formatGenericTooltip(properties, value, currentIndexDef, source);
     };

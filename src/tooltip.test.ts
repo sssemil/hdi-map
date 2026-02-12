@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { formatTooltipContent, formatHdiTooltip, type TooltipFormatter } from './tooltip';
+import { formatTooltipContent, formatHdiTooltip, formatWhrTooltip, formatOecdTooltip, type TooltipFormatter } from './tooltip';
 import { getMockRegionProperties } from './schemas/region-properties.schema';
 import { getMockHdiRegionValue } from './schemas/hdi-values.schema';
+import { getMockWhrRegionValue } from './schemas/whr-values.schema';
+import { getMockOecdBliRegionValue } from './schemas/oecd-bli-values.schema';
 
 describe('formatHdiTooltip', () => {
   it('should format subnational region with full HDI data', () => {
@@ -184,6 +186,152 @@ describe('formatHdiTooltip', () => {
     const html = formatHdiTooltip({ properties: props });
 
     expect(html).not.toContain('Source:');
+  });
+});
+
+describe('formatWhrTooltip', () => {
+  it('should show happiness score with 1 decimal', () => {
+    const props = getMockRegionProperties({
+      name: 'Finland',
+      country: 'Finland',
+      level: 'national',
+    });
+    const whrValue = getMockWhrRegionValue({ score: 7.736 });
+    const html = formatWhrTooltip({ properties: props, whrValue });
+
+    expect(html).toContain('Finland');
+    expect(html).toContain('Happiness Score: 7.7');
+  });
+
+  it('should show sub-factors with 3 decimal places', () => {
+    const props = getMockRegionProperties({
+      name: 'Finland',
+      country: 'Finland',
+      level: 'national',
+    });
+    const whrValue = getMockWhrRegionValue({
+      score: 7.736,
+      gdpPerCapita: 1.855,
+      socialSupport: 1.587,
+      lifeExpectancy: 0.695,
+      freedom: 0.830,
+      generosity: 0.141,
+      corruption: 0.519,
+    });
+    const html = formatWhrTooltip({ properties: props, whrValue });
+
+    expect(html).toContain('GDP per capita: 1.855');
+    expect(html).toContain('Social support: 1.587');
+    expect(html).toContain('Life expectancy: 0.695');
+    expect(html).toContain('Freedom: 0.830');
+    expect(html).toContain('Generosity: 0.141');
+    expect(html).toContain('Corruption: 0.519');
+  });
+
+  it('should show country-level data note', () => {
+    const props = getMockRegionProperties({
+      name: 'Bavaria',
+      country: 'Germany',
+      level: 'subnational',
+    });
+    const whrValue = getMockWhrRegionValue({ score: 6.7 });
+    const html = formatWhrTooltip({ properties: props, whrValue });
+
+    expect(html).toContain('Country-level data');
+  });
+
+  it('should handle no data', () => {
+    const props = getMockRegionProperties({ name: 'Unknown' });
+    const html = formatWhrTooltip({ properties: props });
+
+    expect(html).toContain('No data available');
+  });
+
+  it('should skip null sub-factors', () => {
+    const props = getMockRegionProperties({
+      name: 'Test',
+      country: 'Test',
+      level: 'national',
+    });
+    const whrValue = getMockWhrRegionValue({
+      score: 5.0,
+      gdpPerCapita: null,
+      socialSupport: null,
+      lifeExpectancy: null,
+      freedom: null,
+      generosity: null,
+      corruption: null,
+    });
+    const html = formatWhrTooltip({ properties: props, whrValue });
+
+    expect(html).toContain('5.0');
+    expect(html).not.toContain('GDP per capita');
+  });
+});
+
+describe('formatOecdTooltip', () => {
+  it('should show single dimension score', () => {
+    const props = getMockRegionProperties({
+      name: 'Bavaria',
+      country: 'Germany',
+      level: 'subnational',
+    });
+    const oecdValue = getMockOecdBliRegionValue({ health: 8.3 });
+    const html = formatOecdTooltip({
+      properties: props,
+      oecdValue,
+      dimensionLabel: 'Health',
+    });
+
+    expect(html).toContain('Bavaria');
+    expect(html).toContain('Germany');
+    expect(html).toContain('Health: 8.3');
+  });
+
+  it('should show weighted average with all 11 dimension values', () => {
+    const props = getMockRegionProperties({
+      name: 'Bavaria',
+      country: 'Germany',
+      level: 'subnational',
+    });
+    const oecdValue = getMockOecdBliRegionValue({
+      income: 8.5, jobs: 7.8, housing: 6.2, education: 7.9,
+      health: 8.3, environment: 5.1, safety: 9.2, civicEngagement: 4.3,
+      accessToServices: 6.8, community: 7.5, lifeSatisfaction: 7.0,
+    });
+    const html = formatOecdTooltip({
+      properties: props,
+      oecdValue,
+      compositeScore: 7.1,
+    });
+
+    expect(html).toContain('Weighted Average: 7.1');
+    expect(html).toContain('Income: 8.5');
+    expect(html).toContain('Jobs: 7.8');
+    expect(html).toContain('Safety: 9.2');
+  });
+
+  it('should handle no data', () => {
+    const props = getMockRegionProperties({ name: 'Unknown' });
+    const html = formatOecdTooltip({ properties: props });
+
+    expect(html).toContain('No data available');
+  });
+
+  it('should show country-level note for national regions', () => {
+    const props = getMockRegionProperties({
+      name: 'Australia',
+      country: 'Australia',
+      level: 'national',
+    });
+    const oecdValue = getMockOecdBliRegionValue({ health: 9.0 });
+    const html = formatOecdTooltip({
+      properties: props,
+      oecdValue,
+      dimensionLabel: 'Health',
+    });
+
+    expect(html).toContain('Country-level data');
   });
 });
 
