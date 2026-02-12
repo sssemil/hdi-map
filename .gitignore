@@ -1,0 +1,4 @@
+spike/data/
+spike/.venv/
+spike/node_modules/
+*.zip

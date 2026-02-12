@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HDI Map Spike - SVG Performance Test</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a0a2e; color: #eee; font-family: system-ui, sans-serif; overflow: hidden; }
+    #map-container { width: 100vw; height: 100vh; }
+    svg { width: 100%; height: 100%; }
+    .region { stroke: #222; stroke-width: 0.3px; cursor: pointer; }
+    .region:hover { stroke: #fff; stroke-width: 2px; }
+    .graticule { fill: none; stroke: rgba(255,255,255,0.1); stroke-width: 0.3px; }
+    .ocean { fill: #1a2a5e; }
+    #info {
+      position: fixed; top: 10px; left: 10px; background: rgba(0,0,0,0.7);
+      padding: 12px 16px; border-radius: 6px; font-size: 14px; z-index: 10;
+      line-height: 1.6;
+    }
+    #tooltip {
+      position: fixed; pointer-events: none; background: rgba(0,0,0,0.85);
+      padding: 8px 12px; border-radius: 4px; font-size: 13px; display: none;
+      border: 1px solid rgba(255,255,255,0.2); z-index: 20;
+    }
+    #controls {
+      position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 4px; z-index: 10;
+    }
+    #controls button {
+      width: 36px; height: 36px; background: rgba(0,0,0,0.7); border: 1px solid #555;
+      color: #eee; font-size: 18px; cursor: pointer; border-radius: 4px;
+    }
+    #controls button:hover { background: rgba(50,50,80,0.9); }
+    select {
+      position: fixed; top: 10px; right: 10px; background: #222; color: #eee;
+      padding: 6px; border: 1px solid #555; border-radius: 4px; z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <div id="info">Loading...</div>
+  <div id="tooltip"></div>
+  <div id="controls">
+    <button id="zoom-in">+</button>
+    <button id="zoom-out">-</button>
+    <button id="zoom-reset" style="font-size:12px">R</button>
+  </div>
+  <select id="file-select">
+    <option value="data/gdl_aggressive.topo.json">Aggressive (0.1%, ~0.3MB gz)</option>
+    <option value="data/gdl_medium.topo.json">Medium (1%, ~1.4MB gz)</option>
+    <option value="data/gdl_2pct.topo.json" selected>2% (~2.4MB gz)</option>
+    <option value="data/gdl_3pct.topo.json">3% (~3.5MB gz)</option>
+    <option value="data/gdl_light.topo.json">Light (10%, ~9.8MB gz)</option>
+  </select>
+  <div id="map-container"></div>
+
+  <script type="module" src="./spike-app.js"></script>
+</body>
+</html>
