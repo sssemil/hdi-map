@@ -29,14 +29,14 @@ Initialize the project with Vite, TypeScript strict mode, and Vitest. Install al
 
 ## Acceptance Criteria
 
-- [ ] `npm run dev` starts a dev server with hot reload
-- [ ] `npm test` runs Vitest successfully (0 tests is fine)
-- [ ] `npm run build` produces static files in `dist/`
-- [ ] TypeScript strict mode enabled (all flags from CLAUDE.md)
-- [ ] All dependencies installed and importable
-- [ ] `index.html` renders with dark background
-- [ ] Viewport < 768px shows fallback message
-- [ ] Directory structure created for all planned modules
+- [x] `npm run dev` starts a dev server with hot reload
+- [x] `npm test` runs Vitest successfully (0 tests is fine)
+- [x] `npm run build` produces static files in `dist/`
+- [x] TypeScript strict mode enabled (all flags from CLAUDE.md)
+- [x] All dependencies installed and importable
+- [x] `index.html` renders with dark background
+- [x] Viewport < 768px shows fallback message
+- [x] Directory structure created for all planned modules
 
 ## Implementation Notes
 
@@ -53,3 +53,5 @@ Initialize the project with Vite, TypeScript strict mode, and Vitest. Install al
 ## History
 
 - 2026-02-12 Created from brutal-plan PLAN-0001
+- 2026-02-12 07:02 Started work on this task
+- 2026-02-12 Completed: all scaffolding verified, dev/test/build all pass

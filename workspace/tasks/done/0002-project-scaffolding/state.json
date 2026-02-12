@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "task_id": "0001-data-spike",
+  "task_id": "0002-project-scaffolding",
   "status": "implementing",
-  "started_at": "2026-02-12T06:47:20Z",
+  "started_at": "2026-02-12T07:02:02Z",
   "review_iteration": 0,
   "max_iterations": 30,
   "changed_files": [],

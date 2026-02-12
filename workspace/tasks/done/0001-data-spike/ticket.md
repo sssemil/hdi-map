@@ -36,16 +36,16 @@ The spike validates three things simultaneously:
 
 ## Acceptance Criteria
 
-- [ ] GDL shapefiles downloaded and inspected (structure, attributes, CRS)
-- [ ] SHDI CSV downloaded and inspected (columns, encoding, latest year, GDL-Code count)
-- [ ] GDL license terms documented
-- [ ] Shapefile → GeoJSON conversion successful
-- [ ] GDL-Code join attempted, match rate reported (target: >95%)
-- [ ] TopoJSON generated at 3 simplification levels with measured file sizes
-- [ ] Bare D3 SVG renderer built, performance measured
-- [ ] Visual quality inspected at 1x and 4x zoom (especially small islands, dense European regions)
-- [ ] Findings documented with clear go/no-go recommendation
-- [ ] Decision on SVG vs Canvas made and justified
+- [x] GDL shapefiles downloaded and inspected (structure, attributes, CRS)
+- [x] SHDI CSV downloaded and inspected (columns, encoding, latest year, GDL-Code count)
+- [x] GDL license terms documented
+- [x] Shapefile → GeoJSON conversion successful
+- [x] GDL-Code join attempted, match rate reported (target: >95%) — 96.9%
+- [x] TopoJSON generated at 3 simplification levels with measured file sizes
+- [x] Bare D3 SVG renderer built, performance measured
+- [x] Visual quality inspected at 1x and 4x zoom (especially small islands, dense European regions)
+- [x] Findings documented with clear go/no-go recommendation
+- [x] Decision on SVG vs Canvas made and justified — SVG confirmed viable
 
 ## Implementation Notes
 
@@ -66,3 +66,4 @@ The spike validates three things simultaneously:
 
 - 2026-02-12 Created from brutal-plan PLAN-0001
 - 2026-02-12 06:47 Started work on this task
+- 2026-02-12 07:55 Task completed. All acceptance criteria met. GO decision: proceed with SVG, 2% simplification, mapshaper pipeline.

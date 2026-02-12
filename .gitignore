@@ -1,4 +1,7 @@
+node_modules/
+dist/
 spike/data/
 spike/.venv/
 spike/node_modules/
 *.zip
+*.local

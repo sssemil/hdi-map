@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Subnational Human Development Index Map</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0a0a2e;
+      color: #e0e0e0;
+      font-family: system-ui, -apple-system, sans-serif;
+      overflow: hidden;
+    }
+
+    #app {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .small-viewport-message {
+      display: none;
+      text-align: center;
+      padding: 2rem;
+      max-width: 400px;
+      line-height: 1.6;
+    }
+
+    .small-viewport-message h2 {
+      margin-bottom: 0.5rem;
+      font-size: 1.2rem;
+    }
+
+    .small-viewport-message p {
+      font-size: 0.9rem;
+      color: #999;
+    }
+
+    @media (max-width: 767px) {
+      .small-viewport-message { display: block; }
+      #map-container { display: none; }
+    }
+
+    noscript {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      text-align: center;
+      padding: 2rem;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <noscript>
+    <p>This interactive map requires JavaScript to render. Please enable JavaScript in your browser.</p>
+  </noscript>
+  <div id="app">
+    <div class="small-viewport-message">
+      <h2>Best viewed on desktop</h2>
+      <p>This interactive map with 1,800+ subnational regions is designed for screens 768px or wider. Please use a desktop browser or rotate your device to landscape.</p>
+    </div>
+    <div id="map-container"></div>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
