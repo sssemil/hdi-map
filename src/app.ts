@@ -4,6 +4,7 @@ import { createMapRenderer, type MapRenderer } from './map-renderer';
 import { formatTooltipContent } from './tooltip';
 import { searchRegions, buildSearchIndex, type SearchIndex } from './region-search';
 import { PALETTES, DEFAULT_PALETTE_ID, getPaletteById, type PaletteId } from './palette-registry';
+import { getRegionSource } from './region-supplements';
 const DATA_URL = `${import.meta.env.BASE_URL}data/regions.topo.json`;
 
 const createTooltipController = (container: HTMLElement) => {
@@ -249,7 +250,9 @@ const createInfoPanel = (container: HTMLElement): void => {
     '<div style="margin-bottom:10px"><strong>HDI Data</strong><br>Global Data Lab, Subnational HDI v8.3<br>' +
       '<span style="color:#888">Zenodo DOI: 10.5281/zenodo.17467221</span></div>',
     '<div style="margin-bottom:10px"><strong>Boundaries</strong><br>GDL Shapefiles V6.5</div>',
-    '<div style="margin-bottom:10px"><strong>Taiwan &amp; Hong Kong</strong><br>Taiwan: DGBAS (Statistics Bureau); Hong Kong: UNDP HDR<br>' +
+    '<div style="margin-bottom:10px"><strong>Supplemental HDI</strong><br>' +
+      'Taiwan: DGBAS (Statistics Bureau)<br>' +
+      'Hong Kong, San Marino: UNDP HDR<br>' +
       '<span style="color:#888">HDI calculated per UNDP methodology</span></div>',
     '<div style="margin-bottom:10px"><strong>Projection</strong><br>Robinson (via d3-geo-projection)</div>',
     '<div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:10px;margin-top:10px;color:#888;font-size:12px">' +
@@ -346,7 +349,7 @@ export const initApp = async (container: HTMLElement): Promise<void> => {
         if (feature) {
           const rect = mapContainer.getBoundingClientRect();
           tooltipController.show(
-            formatTooltipContent(feature.properties),
+            formatTooltipContent(feature.properties, getRegionSource(feature.properties.gdlCode)),
             event.clientX - rect.left,
             event.clientY - rect.top
           );

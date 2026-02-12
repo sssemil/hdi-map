@@ -155,4 +155,37 @@ describe('formatTooltipContent', () => {
 
     expect(html).toContain('<div>No data available</div>');
   });
+
+  it('should show source attribution when provided', () => {
+    const props = getMockRegionProperties({
+      name: 'Taiwan',
+      country: 'Taiwan',
+      hdi: 0.926,
+      level: 'national',
+      educationIndex: null,
+      healthIndex: null,
+      incomeIndex: null,
+    });
+    const html = formatTooltipContent(props, 'DGBAS (Taiwan)');
+
+    expect(html).toContain('Source: DGBAS (Taiwan)');
+  });
+
+  it('should show GDL source for standard regions', () => {
+    const props = getMockRegionProperties({
+      name: 'Bavaria',
+      country: 'Germany',
+      level: 'subnational',
+    });
+    const html = formatTooltipContent(props, 'GDL SHDI v8.3');
+
+    expect(html).toContain('Source: GDL SHDI v8.3');
+  });
+
+  it('should not show source line when source is not provided', () => {
+    const props = getMockRegionProperties();
+    const html = formatTooltipContent(props);
+
+    expect(html).not.toContain('Source:');
+  });
 });

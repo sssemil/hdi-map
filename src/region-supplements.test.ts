@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { REGION_SUPPLEMENTS } from './region-supplements';
+import { REGION_SUPPLEMENTS, getRegionSource } from './region-supplements';
 import { RegionPropertiesSchema } from './schemas/region-properties.schema';
 
 describe('REGION_SUPPLEMENTS', () => {
@@ -50,11 +50,31 @@ describe('REGION_SUPPLEMENTS', () => {
     expect(smr!.properties.year).toBe(2023);
   });
 
+  it('should have a source string for every supplement', () => {
+    for (const supplement of REGION_SUPPLEMENTS) {
+      expect(supplement.source).toBeTruthy();
+      expect(typeof supplement.source).toBe('string');
+    }
+  });
+
   it('should have null sub-indices for all supplements', () => {
     for (const supplement of REGION_SUPPLEMENTS) {
       expect(supplement.properties.educationIndex).toBeNull();
       expect(supplement.properties.healthIndex).toBeNull();
       expect(supplement.properties.incomeIndex).toBeNull();
     }
+  });
+});
+
+describe('getRegionSource', () => {
+  it('should return supplement source for supplemented regions', () => {
+    expect(getRegionSource('CHNr133')).toBe('DGBAS (Taiwan)');
+    expect(getRegionSource('CHNr132')).toBe('UNDP HDR');
+    expect(getRegionSource('SMRt')).toBe('UNDP HDR');
+  });
+
+  it('should return GDL SHDI source for non-supplemented regions', () => {
+    expect(getRegionSource('GBRr101')).toBe('GDL SHDI v8.3');
+    expect(getRegionSource('INDr101')).toBe('GDL SHDI v8.3');
   });
 });

@@ -35,11 +35,17 @@ const formatNationalNote = (properties: RegionProperties): string => {
   return '<div class="tooltip-note">Country-level data</div>';
 };
 
-export const formatTooltipContent = (properties: RegionProperties): string => {
+const formatSource = (source?: string): string => {
+  if (!source) return '';
+  return `<div class="tooltip-source">Source: ${source}</div>`;
+};
+
+export const formatTooltipContent = (properties: RegionProperties, source?: string): string => {
   const title = formatTitle(properties);
   const hdiLine = formatHdiLine(properties);
   const subIndices = formatSubIndices(properties);
   const note = formatNationalNote(properties);
+  const sourceLine = formatSource(source);
 
-  return [title, hdiLine, subIndices, note].filter(Boolean).join('');
+  return [title, hdiLine, subIndices, note, sourceLine].filter(Boolean).join('');
 };
