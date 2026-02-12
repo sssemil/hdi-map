@@ -204,7 +204,7 @@ const createPalettePicker = (
 ): void => {
   const wrapper = document.createElement('div');
   wrapper.style.cssText =
-    'position:absolute;top:52px;left:16px;z-index:50';
+    'position:absolute;top:88px;left:16px;z-index:50';
 
   const select = document.createElement('select');
   select.style.cssText =
@@ -257,6 +257,49 @@ const createIndexSwitcher = (
 
   wrapper.appendChild(select);
   container.appendChild(wrapper);
+};
+
+type DimensionSelector = {
+  readonly show: (dimensions: readonly { id: string; label: string }[]) => void;
+  readonly hide: () => void;
+};
+
+const createDimensionSelector = (
+  container: HTMLElement,
+  onChange: (dimensionId: string) => void
+): DimensionSelector => {
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText =
+    'position:absolute;top:52px;left:16px;z-index:50;display:none';
+
+  const select = document.createElement('select');
+  select.style.cssText =
+    'padding:6px 10px;background:rgba(10,10,46,0.9);color:#e0e0e0;' +
+    'border:1px solid rgba(255,255,255,0.15);border-radius:6px;font-size:13px;' +
+    'cursor:pointer;outline:none';
+
+  select.addEventListener('change', () => {
+    onChange(select.value);
+  });
+
+  wrapper.appendChild(select);
+  container.appendChild(wrapper);
+
+  return {
+    show: (dimensions) => {
+      select.innerHTML = '';
+      dimensions.forEach((dim) => {
+        const option = document.createElement('option');
+        option.value = dim.id;
+        option.textContent = dim.label;
+        select.appendChild(option);
+      });
+      wrapper.style.display = 'block';
+    },
+    hide: () => {
+      wrapper.style.display = 'none';
+    },
+  };
 };
 
 const formatGenericTooltip = (
@@ -395,6 +438,7 @@ export const initApp = async (container: HTMLElement): Promise<void> => {
     const valueLoader = createValueLoader();
     let currentIndexDef = getIndexById(DEFAULT_INDEX_ID);
     let currentPaletteId = DEFAULT_PALETTE_ID;
+    let currentDimensionId: string | undefined;
 
     const [{ regions }, initialValues] = await Promise.all([
       loadMapData(DATA_URL),
@@ -467,15 +511,36 @@ export const initApp = async (container: HTMLElement): Promise<void> => {
       legendElement = createLegend(mapContainer, currentIndexDef.legendTitle, currentScale.bins, onBinHover);
     };
 
+    const dimensionSelector = createDimensionSelector(mapContainer, (dimensionId) => {
+      currentDimensionId = dimensionId === 'weighted-average' ? undefined : dimensionId;
+      const values = valueLoader.getCachedValues('oecd-bli');
+      if (values) {
+        currentGetValue = createGetValue({
+          indexId: 'oecd-bli',
+          values,
+          dimensionId: currentDimensionId,
+        });
+        renderer.updateValues(currentGetValue);
+        rebuildScale();
+      }
+    });
+
     createIndexSwitcher(mapContainer, DEFAULT_INDEX_ID, async (indexId) => {
       const newIndexDef = getIndexById(indexId);
       const values = await valueLoader.loadValues(indexId);
 
       currentIndexDef = newIndexDef;
+      currentDimensionId = undefined;
       currentGetValue = createGetValue({ indexId, values });
 
       renderer.updateValues(currentGetValue);
       rebuildScale();
+
+      if (newIndexDef.dimensions) {
+        dimensionSelector.show(newIndexDef.dimensions);
+      } else {
+        dimensionSelector.hide();
+      }
     });
 
     createPalettePicker(mapContainer, (paletteId) => {

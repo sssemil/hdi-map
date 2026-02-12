@@ -17,6 +17,20 @@ const OECD_DIMENSION_KEYS: readonly (keyof OecdBliRegionValue)[] = [
   'community', 'lifeSatisfaction',
 ];
 
+const DIMENSION_ID_TO_KEY: Record<string, keyof OecdBliRegionValue> = {
+  income: 'income',
+  jobs: 'jobs',
+  housing: 'housing',
+  education: 'education',
+  health: 'health',
+  environment: 'environment',
+  safety: 'safety',
+  'civic-engagement': 'civicEngagement',
+  'accessibility-to-services': 'accessToServices',
+  community: 'community',
+  'life-satisfaction': 'lifeSatisfaction',
+};
+
 const computeOecdWeightedAverage = (entry: OecdBliRegionValue): number | null => {
   const validValues = OECD_DIMENSION_KEYS
     .map((k) => entry[k])
@@ -43,10 +57,11 @@ export const createGetValue = (options: CreateGetValueOptions): GetValueFn => {
   }
 
   const oecdValues = values as OecdBliValues;
+  const schemaKey = dimensionId ? DIMENSION_ID_TO_KEY[dimensionId] : undefined;
 
-  if (dimensionId && OECD_DIMENSION_KEYS.includes(dimensionId as keyof OecdBliRegionValue)) {
+  if (schemaKey) {
     return (_gdlCode: string, countryIso: string): number | null =>
-      oecdValues[countryIso]?.[dimensionId as keyof OecdBliRegionValue] ?? null;
+      oecdValues[countryIso]?.[schemaKey] ?? null;
   }
 
   return (_gdlCode: string, countryIso: string): number | null => {

@@ -128,6 +128,41 @@ describe('createGetValue', () => {
       expect(result).toBeCloseTo(expected, 1);
     });
 
+    it('should resolve kebab-case dimension IDs to camelCase schema keys', () => {
+      const values: OecdBliValues = {
+        AUS: getMockOecdBliRegionValue({
+          civicEngagement: 9.2,
+          accessToServices: 6.0,
+          lifeSatisfaction: 8.5,
+        }),
+      };
+
+      const ce = createGetValue({ indexId: 'oecd-bli', values, dimensionId: 'civic-engagement' });
+      expect(ce('AUSr101', 'AUS')).toBe(9.2);
+
+      const ats = createGetValue({ indexId: 'oecd-bli', values, dimensionId: 'accessibility-to-services' });
+      expect(ats('AUSr101', 'AUS')).toBe(6.0);
+
+      const ls = createGetValue({ indexId: 'oecd-bli', values, dimensionId: 'life-satisfaction' });
+      expect(ls('AUSr101', 'AUS')).toBe(8.5);
+    });
+
+    it('should fall back to weighted average for weighted-average dimensionId', () => {
+      const values: OecdBliValues = {
+        AUS: getMockOecdBliRegionValue({
+          income: 5.0, jobs: 8.0, housing: 6.0, education: 8.0,
+          health: 9.0, environment: 8.0, safety: 9.5, civicEngagement: 9.5,
+          accessToServices: 6.0, community: 8.5, lifeSatisfaction: 8.5,
+        }),
+      };
+      const getValue = createGetValue({ indexId: 'oecd-bli', values, dimensionId: 'weighted-average' });
+
+      const result = getValue('AUSr101', 'AUS');
+      expect(result).not.toBeNull();
+      const expected = (5.0 + 8.0 + 6.0 + 8.0 + 9.0 + 8.0 + 9.5 + 9.5 + 6.0 + 8.5 + 8.5) / 11;
+      expect(result).toBeCloseTo(expected, 1);
+    });
+
     it('should return null when all dimension values are null', () => {
       const values: OecdBliValues = {
         XXX: getMockOecdBliRegionValue({
