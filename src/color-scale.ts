@@ -1,5 +1,3 @@
-import { interpolatePlasma } from 'd3-scale-chromatic';
-
 export type Bin = {
   readonly min: number;
   readonly max: number;
@@ -11,17 +9,24 @@ export type Interpolator = (t: number) => string;
 
 export type ColorScale = {
   readonly bins: readonly Bin[];
-  readonly getColor: (hdi: number | null) => string;
+  readonly getColor: (value: number | null) => string;
 };
 
-export const NO_DATA_COLOR = '#555';
-
-export const HDI_BIN_DEFINITIONS: readonly {
+export type BinDefinition = {
   readonly min: number;
   readonly max: number;
   readonly samplePoint: number;
   readonly label: string;
-}[] = [
+};
+
+export type CreateColorScaleOptions = {
+  readonly interpolator: Interpolator;
+  readonly binDefinitions: readonly BinDefinition[];
+};
+
+export const NO_DATA_COLOR = '#555';
+
+export const HDI_BIN_DEFINITIONS: readonly BinDefinition[] = [
   { min: 0, max: 0.450, samplePoint: 0.0, label: 'Low (< 0.450)' },
   { min: 0.450, max: 0.550, samplePoint: 0.14, label: 'Low (0.450 - 0.549)' },
   { min: 0.550, max: 0.650, samplePoint: 0.28, label: 'Medium (0.550 - 0.649)' },
@@ -32,22 +37,24 @@ export const HDI_BIN_DEFINITIONS: readonly {
   { min: 0.900, max: 1, samplePoint: 1.0, label: 'Very High (0.900+)' },
 ];
 
-export const createColorScale = (interpolator: Interpolator): ColorScale => {
-  const bins: readonly Bin[] = HDI_BIN_DEFINITIONS.map((def) => ({
+export const createColorScale = (options: CreateColorScaleOptions): ColorScale => {
+  const { interpolator, binDefinitions } = options;
+
+  const bins: readonly Bin[] = binDefinitions.map((def) => ({
     min: def.min,
     max: def.max,
     color: interpolator(def.samplePoint),
     label: def.label,
   }));
 
-  const getColorFn = (hdi: number | null): string => {
-    if (hdi === null) return NO_DATA_COLOR;
+  const getColorFn = (value: number | null): string => {
+    if (value === null) return NO_DATA_COLOR;
 
     for (const bin of bins) {
       if (bin === bins[bins.length - 1]) {
-        if (hdi >= bin.min && hdi <= bin.max) return bin.color;
+        if (value >= bin.min && value <= bin.max) return bin.color;
       } else {
-        if (hdi >= bin.min && hdi < bin.max) return bin.color;
+        if (value >= bin.min && value < bin.max) return bin.color;
       }
     }
 
@@ -56,8 +63,3 @@ export const createColorScale = (interpolator: Interpolator): ColorScale => {
 
   return { bins, getColor: getColorFn };
 };
-
-const defaultScale = createColorScale(interpolatePlasma);
-
-export const HDI_BINS: readonly Bin[] = defaultScale.bins;
-export const getColor = defaultScale.getColor;

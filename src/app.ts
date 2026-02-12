@@ -1,5 +1,5 @@
 import { loadMapData } from './data-loader';
-import { createColorScale, NO_DATA_COLOR, type Bin } from './color-scale';
+import { createColorScale, NO_DATA_COLOR, HDI_BIN_DEFINITIONS, type Bin } from './color-scale';
 import { createMapRenderer, type MapRenderer } from './map-renderer';
 import { formatTooltipContent } from './tooltip';
 import { searchRegions, buildSearchIndex, type SearchIndex } from './region-search';
@@ -335,9 +335,10 @@ export const initApp = async (container: HTMLElement): Promise<void> => {
 
     loading.remove();
 
-    let currentScale = createColorScale(
-      getPaletteById(DEFAULT_PALETTE_ID).interpolator
-    );
+    let currentScale = createColorScale({
+      interpolator: getPaletteById(DEFAULT_PALETTE_ID).interpolator,
+      binDefinitions: HDI_BIN_DEFINITIONS,
+    });
 
     const tooltipController = createTooltipController(mapContainer);
 
@@ -369,7 +370,7 @@ export const initApp = async (container: HTMLElement): Promise<void> => {
 
     createPalettePicker(mapContainer, (paletteId) => {
       const palette = getPaletteById(paletteId);
-      currentScale = createColorScale(palette.interpolator);
+      currentScale = createColorScale({ interpolator: palette.interpolator, binDefinitions: HDI_BIN_DEFINITIONS });
       renderer.updateColors(currentScale.getColor);
       legendElement.remove();
       legendElement = createLegend(mapContainer, currentScale.bins, onBinHover);
