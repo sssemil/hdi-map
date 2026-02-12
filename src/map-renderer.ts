@@ -7,7 +7,8 @@ type RegionFeature = GeoJSON.Feature<GeoJSON.Geometry, RegionProperties>;
 type MapRendererOptions = {
   readonly container: HTMLElement;
   readonly regions: readonly RegionFeature[];
-  readonly getColor: (hdi: number | null) => string;
+  readonly getColor: (value: number | null) => string;
+  readonly getValue: (gdlCode: string, countryIso: string) => number | null;
   readonly onRegionHover?: (
     feature: RegionFeature | null,
     event: MouseEvent
@@ -21,12 +22,14 @@ export type MapRenderer = {
   readonly highlightRegions: (filter: { min: number; max: number } | null) => void;
   readonly highlightSingle: (gdlCode: string | null) => void;
   readonly zoomToRegion: (gdlCode: string) => void;
-  readonly updateColors: (newGetColor: (hdi: number | null) => string) => void;
+  readonly updateColors: (newGetColor: (value: number | null) => string) => void;
+  readonly updateValues: (newGetValue: (gdlCode: string, countryIso: string) => number | null) => void;
 };
 
 export const createMapRenderer = (options: MapRendererOptions): MapRenderer => {
   const { container, regions, onRegionHover } = options;
   let currentGetColor = options.getColor;
+  let currentGetValue = options.getValue;
 
   const svg = d3
     .select(container)
@@ -91,7 +94,7 @@ export const createMapRenderer = (options: MapRendererOptions): MapRenderer => {
       .data(regions as RegionFeature[], (d) => d.properties.gdlCode)
       .join('path')
       .attr('d', (d) => pathGenerator(d) ?? '')
-      .attr('fill', (d) => currentGetColor(d.properties.hdi))
+      .attr('fill', (d) => currentGetColor(currentGetValue(d.properties.gdlCode, d.properties.countryIso)))
       .attr('stroke', '#0a0a2e')
       .attr('stroke-width', 0.3)
       .attr('data-gdl-code', (d) => d.properties.gdlCode)
@@ -181,11 +184,18 @@ export const createMapRenderer = (options: MapRendererOptions): MapRenderer => {
       .call(zoom.transform, transform);
   };
 
-  const updateColors = (newGetColor: (hdi: number | null) => string): void => {
+  const updateColors = (newGetColor: (value: number | null) => string): void => {
     currentGetColor = newGetColor;
     regionGroup
       .selectAll<SVGPathElement, RegionFeature>('path')
-      .attr('fill', (d) => currentGetColor(d.properties.hdi));
+      .attr('fill', (d) => currentGetColor(currentGetValue(d.properties.gdlCode, d.properties.countryIso)));
+  };
+
+  const updateValues = (newGetValue: (gdlCode: string, countryIso: string) => number | null): void => {
+    currentGetValue = newGetValue;
+    regionGroup
+      .selectAll<SVGPathElement, RegionFeature>('path')
+      .attr('fill', (d) => currentGetColor(currentGetValue(d.properties.gdlCode, d.properties.countryIso)));
   };
 
   return {
@@ -196,5 +206,6 @@ export const createMapRenderer = (options: MapRendererOptions): MapRenderer => {
     highlightSingle,
     zoomToRegion,
     updateColors,
+    updateValues,
   };
 };

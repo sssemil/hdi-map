@@ -342,10 +342,15 @@ export const initApp = async (container: HTMLElement): Promise<void> => {
 
     const tooltipController = createTooltipController(mapContainer);
 
+    const regionMap = new Map(regions.map((r) => [r.properties.gdlCode, r.properties]));
+    const hdiGetValue = (_gdlCode: string, _countryIso: string): number | null =>
+      regionMap.get(_gdlCode)?.hdi ?? null;
+
     const renderer: MapRenderer = createMapRenderer({
       container: mapContainer,
       regions,
       getColor: currentScale.getColor,
+      getValue: hdiGetValue,
       onRegionHover: (feature, event) => {
         if (feature) {
           const rect = mapContainer.getBoundingClientRect();
