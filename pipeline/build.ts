@@ -7,6 +7,8 @@ import { parseShdiCsv } from './parse-shdi';
 import type { ShdiRecord } from './parse-shdi';
 import type { RegionProperties } from '../src/schemas/region-properties.schema';
 import { extractHdiValues } from './extract-hdi-values';
+import { extractWhrValues, type WhrExcelRow } from './extract-whr-values';
+import XLSX from 'xlsx';
 
 const SPIKE_DATA_DIR = 'spike/data';
 const CSV_PATH = `${SPIKE_DATA_DIR}/SHDI-v8.3.csv`;
@@ -137,6 +139,23 @@ const run = (): void => {
   writeFileSync(hdiValuesPath, JSON.stringify(hdiValues));
   const hdiStats = readFileSync(hdiValuesPath);
   log(`  Output: ${hdiValuesPath} (${(hdiStats.length / 1024).toFixed(1)} KB, ${Object.keys(hdiValues).length} regions)`);
+
+  log('Building WHR values...');
+  try {
+    const whrWb = XLSX.readFile(`${SPIKE_DATA_DIR}/whr-2025-figure-2.1.xlsx`);
+    const whrWs = whrWb.Sheets[whrWb.SheetNames[0]];
+    const whrRows = XLSX.utils.sheet_to_json(whrWs) as WhrExcelRow[];
+    const countryToIso: Record<string, string | null> = JSON.parse(
+      readFileSync('pipeline/data/whr-country-to-iso.json', 'utf-8')
+    );
+    const whrValues = extractWhrValues(whrRows, countryToIso);
+    const whrPath = `${OUTPUT_DIR}/whr-values.json`;
+    writeFileSync(whrPath, JSON.stringify(whrValues));
+    const whrStats = readFileSync(whrPath);
+    log(`  Output: ${whrPath} (${(whrStats.length / 1024).toFixed(1)} KB, ${Object.keys(whrValues).length} countries)`);
+  } catch (e) {
+    log(`  WHR build skipped: ${e instanceof Error ? e.message : String(e)}`);
+  }
 
   log('Pipeline build complete!');
 };
