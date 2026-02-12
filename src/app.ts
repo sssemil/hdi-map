@@ -3,7 +3,7 @@ import { getColor, HDI_BINS, NO_DATA_COLOR } from './color-scale';
 import { createMapRenderer, type MapRenderer } from './map-renderer';
 import { formatTooltipContent } from './tooltip';
 import { searchRegions, buildSearchIndex, type SearchIndex } from './region-search';
-const DATA_URL = '/data/regions.topo.json';
+const DATA_URL = `${import.meta.env.BASE_URL}data/regions.topo.json`;
 
 const createTooltipController = (container: HTMLElement) => {
   const tooltip = document.createElement('div');
