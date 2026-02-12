@@ -32,11 +32,6 @@ const buildMockTopology = () => ({
             country: '',
             countryIso: 'CHN',
             level: 'subnational',
-            year: 0,
-            hdi: null,
-            educationIndex: null,
-            healthIndex: null,
-            incomeIndex: null,
             centroid: [114.134, 22.384],
           }),
         },
@@ -49,11 +44,6 @@ const buildMockTopology = () => ({
             country: '',
             countryIso: 'CHN',
             level: 'subnational',
-            year: 0,
-            hdi: null,
-            educationIndex: null,
-            healthIndex: null,
-            incomeIndex: null,
             centroid: [120.955, 23.748],
           }),
         },
@@ -155,7 +145,7 @@ describe('loadMapData', () => {
     vi.unstubAllGlobals();
   });
 
-  it('should patch CHNr133 with Taiwan HDI data', async () => {
+  it('should patch CHNr133 with Taiwan geographic identity', async () => {
     const mockTopology = buildMockTopology();
     vi.stubGlobal(
       'fetch',
@@ -170,12 +160,12 @@ describe('loadMapData', () => {
     const taiwan = result.regions.find((r) => r.properties.gdlCode === 'CHNr133');
     expect(taiwan).toBeDefined();
     expect(taiwan!.properties.name).toBe('Taiwan');
-    expect(taiwan!.properties.hdi).toBe(0.926);
+    expect(taiwan!.properties.countryIso).toBe('TWN');
 
     vi.unstubAllGlobals();
   });
 
-  it('should patch CHNr132 with Hong Kong HDI data', async () => {
+  it('should patch CHNr132 with Hong Kong geographic identity', async () => {
     const mockTopology = buildMockTopology();
     vi.stubGlobal(
       'fetch',
@@ -190,7 +180,7 @@ describe('loadMapData', () => {
     const hk = result.regions.find((r) => r.properties.gdlCode === 'CHNr132');
     expect(hk).toBeDefined();
     expect(hk!.properties.name).toBe('Hong Kong');
-    expect(hk!.properties.hdi).toBe(0.956);
+    expect(hk!.properties.countryIso).toBe('HKG');
 
     vi.unstubAllGlobals();
   });

@@ -1,18 +1,11 @@
 import { z } from 'zod';
 
-const indexRange = z.number().min(0).max(1).nullable();
-
 export const RegionPropertiesSchema = z.object({
   gdlCode: z.string(),
   name: z.string(),
   country: z.string(),
   countryIso: z.string().length(3),
   level: z.enum(['subnational', 'national']),
-  year: z.number().int(),
-  hdi: indexRange,
-  educationIndex: indexRange,
-  healthIndex: indexRange,
-  incomeIndex: indexRange,
   centroid: z.tuple([z.number(), z.number()]),
 });
 
@@ -46,11 +39,6 @@ export const getMockRegionProperties = (
     country: 'United Kingdom',
     countryIso: 'GBR',
     level: 'subnational',
-    year: 2022,
-    hdi: 0.929,
-    educationIndex: 0.887,
-    healthIndex: 0.953,
-    incomeIndex: 0.948,
     centroid: [-1.5, 55.0],
   };
 

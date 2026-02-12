@@ -19,35 +19,31 @@ describe('REGION_SUPPLEMENTS', () => {
     }
   });
 
-  it('should have Taiwan HDI of 0.926', () => {
+  it('should have Taiwan with correct geographic identity', () => {
     const taiwan = REGION_SUPPLEMENTS.find((s) => s.gdlCode === 'CHNr133');
 
     expect(taiwan).toBeDefined();
     expect(taiwan!.properties.name).toBe('Taiwan');
-    expect(taiwan!.properties.hdi).toBe(0.926);
     expect(taiwan!.properties.countryIso).toBe('TWN');
     expect(taiwan!.properties.level).toBe('national');
   });
 
-  it('should have Hong Kong HDI of 0.956', () => {
+  it('should have Hong Kong with correct geographic identity', () => {
     const hk = REGION_SUPPLEMENTS.find((s) => s.gdlCode === 'CHNr132');
 
     expect(hk).toBeDefined();
     expect(hk!.properties.name).toBe('Hong Kong');
-    expect(hk!.properties.hdi).toBe(0.956);
     expect(hk!.properties.countryIso).toBe('HKG');
     expect(hk!.properties.level).toBe('national');
   });
 
-  it('should have San Marino HDI of 0.915', () => {
+  it('should have San Marino with correct geographic identity', () => {
     const smr = REGION_SUPPLEMENTS.find((s) => s.gdlCode === 'SMRt');
 
     expect(smr).toBeDefined();
     expect(smr!.properties.name).toBe('San Marino');
-    expect(smr!.properties.hdi).toBe(0.915);
     expect(smr!.properties.countryIso).toBe('SMR');
     expect(smr!.properties.level).toBe('national');
-    expect(smr!.properties.year).toBe(2023);
   });
 
   it('should have a source string for every supplement', () => {
@@ -57,11 +53,12 @@ describe('REGION_SUPPLEMENTS', () => {
     }
   });
 
-  it('should have null sub-indices for all supplements', () => {
+  it('should only contain base geographic identity fields', () => {
     for (const supplement of REGION_SUPPLEMENTS) {
-      expect(supplement.properties.educationIndex).toBeNull();
-      expect(supplement.properties.healthIndex).toBeNull();
-      expect(supplement.properties.incomeIndex).toBeNull();
+      const props = supplement.properties;
+      expect(Object.keys(props).sort()).toEqual(
+        ['centroid', 'country', 'countryIso', 'gdlCode', 'level', 'name']
+      );
     }
   });
 });

@@ -26,7 +26,7 @@ const buildShdiRecord = (overrides?: Partial<ShdiRecord>): ShdiRecord => ({
 });
 
 describe('joinShdiToGeo', () => {
-  it('should join matching GDL-Codes with complete properties', () => {
+  it('should join matching GDL-Codes with base geographic identity', () => {
     const features = [buildFeature('GBRr101')];
     const records = [buildShdiRecord()];
 
@@ -34,15 +34,24 @@ describe('joinShdiToGeo', () => {
 
     expect(result.joined).toHaveLength(1);
     expect(result.joined[0].properties.gdlCode).toBe('GBRr101');
-    expect(result.joined[0].properties.hdi).toBe(0.929);
     expect(result.joined[0].properties.name).toBe('North East England');
     expect(result.joined[0].properties.country).toBe('United Kingdom');
     expect(result.joined[0].properties.countryIso).toBe('GBR');
     expect(result.joined[0].properties.level).toBe('subnational');
-    expect(result.joined[0].properties.year).toBe(2022);
-    expect(result.joined[0].properties.educationIndex).toBe(0.887);
-    expect(result.joined[0].properties.healthIndex).toBe(0.953);
-    expect(result.joined[0].properties.incomeIndex).toBe(0.948);
+  });
+
+  it('should not include HDI-specific fields in joined properties', () => {
+    const features = [buildFeature('GBRr101')];
+    const records = [buildShdiRecord()];
+
+    const result = joinShdiToGeo({ features, records });
+
+    const props = result.joined[0].properties;
+    expect('hdi' in props).toBe(false);
+    expect('educationIndex' in props).toBe(false);
+    expect('healthIndex' in props).toBe(false);
+    expect('incomeIndex' in props).toBe(false);
+    expect('year' in props).toBe(false);
   });
 
   it('should include centroid in joined properties', () => {
@@ -55,7 +64,7 @@ describe('joinShdiToGeo', () => {
     expect(result.joined[0].properties.centroid).toHaveLength(2);
   });
 
-  it('should retain geometry features without CSV data with null HDI', () => {
+  it('should retain geometry features without CSV data', () => {
     const features = [buildFeature('ANDt')];
     const records: readonly ShdiRecord[] = [];
 
@@ -63,10 +72,6 @@ describe('joinShdiToGeo', () => {
 
     expect(result.joined).toHaveLength(1);
     expect(result.joined[0].properties.gdlCode).toBe('ANDt');
-    expect(result.joined[0].properties.hdi).toBeNull();
-    expect(result.joined[0].properties.educationIndex).toBeNull();
-    expect(result.joined[0].properties.healthIndex).toBeNull();
-    expect(result.joined[0].properties.incomeIndex).toBeNull();
   });
 
   it('should report CSV records without matching geometry', () => {
@@ -129,15 +134,6 @@ describe('joinShdiToGeo', () => {
     expect(() =>
       joinShdiToGeo({ features, records, minMatchRate: 0.95 })
     ).not.toThrow();
-  });
-
-  it('should handle case-insensitive GDL-Code matching', () => {
-    const features = [buildFeature('GBRr101')];
-    const records = [buildShdiRecord({ gdlCode: 'GBRr101' })];
-
-    const result = joinShdiToGeo({ features, records });
-
-    expect(result.report.matched).toBe(1);
   });
 
   it('should derive level from gdlcode suffix when CSV record is missing', () => {

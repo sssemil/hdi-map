@@ -13,11 +13,6 @@ const buildRawRegionProperties = (
   country: 'United Kingdom',
   countryIso: 'GBR',
   level: 'subnational',
-  year: 2022,
-  hdi: 0.929,
-  educationIndex: 0.887,
-  healthIndex: 0.953,
-  incomeIndex: 0.948,
   centroid: [-1.5, 55.0],
   ...overrides,
 });
@@ -33,43 +28,6 @@ describe('RegionPropertiesSchema', () => {
       buildRawRegionProperties({ gdlCode: 'SGPt', level: 'national' })
     );
     expect(result.success).toBe(true);
-  });
-
-  it('should accept null hdi and sub-indices for regions without data', () => {
-    const result = RegionPropertiesSchema.safeParse(
-      buildRawRegionProperties({
-        hdi: null,
-        educationIndex: null,
-        healthIndex: null,
-        incomeIndex: null,
-      })
-    );
-    expect(result.success).toBe(true);
-  });
-
-  it('should reject hdi values below 0', () => {
-    const result = RegionPropertiesSchema.safeParse(
-      buildRawRegionProperties({ hdi: -0.1 })
-    );
-    expect(result.success).toBe(false);
-  });
-
-  it('should reject hdi values above 1', () => {
-    const result = RegionPropertiesSchema.safeParse(
-      buildRawRegionProperties({ hdi: 1.1 })
-    );
-    expect(result.success).toBe(false);
-  });
-
-  it('should accept hdi boundary values 0 and 1', () => {
-    const atZero = RegionPropertiesSchema.safeParse(
-      buildRawRegionProperties({ hdi: 0 })
-    );
-    const atOne = RegionPropertiesSchema.safeParse(
-      buildRawRegionProperties({ hdi: 1 })
-    );
-    expect(atZero.success).toBe(true);
-    expect(atOne.success).toBe(true);
   });
 
   it('should reject invalid level values', () => {
@@ -90,13 +48,6 @@ describe('RegionPropertiesSchema', () => {
     expect(tooLong.success).toBe(false);
   });
 
-  it('should reject non-integer year', () => {
-    const result = RegionPropertiesSchema.safeParse(
-      buildRawRegionProperties({ year: 2022.5 })
-    );
-    expect(result.success).toBe(false);
-  });
-
   it('should reject invalid centroid tuple', () => {
     const result = RegionPropertiesSchema.safeParse(
       buildRawRegionProperties({ centroid: [10] })
@@ -104,29 +55,14 @@ describe('RegionPropertiesSchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('should reject education index outside 0-1 range', () => {
-    const belowZero = RegionPropertiesSchema.safeParse(
-      buildRawRegionProperties({ educationIndex: -0.5 })
-    );
-    const aboveOne = RegionPropertiesSchema.safeParse(
-      buildRawRegionProperties({ educationIndex: 1.5 })
-    );
-    expect(belowZero.success).toBe(false);
-    expect(aboveOne.success).toBe(false);
-  });
-
-  it('should reject health index outside 0-1 range', () => {
-    const result = RegionPropertiesSchema.safeParse(
-      buildRawRegionProperties({ healthIndex: 2.0 })
-    );
-    expect(result.success).toBe(false);
-  });
-
-  it('should reject income index outside 0-1 range', () => {
-    const result = RegionPropertiesSchema.safeParse(
-      buildRawRegionProperties({ incomeIndex: -1 })
-    );
-    expect(result.success).toBe(false);
+  it('should strip unknown properties', () => {
+    const input = buildRawRegionProperties({ hdi: 0.929, year: 2022 });
+    const result = RegionPropertiesSchema.safeParse(input);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect('hdi' in result.data).toBe(false);
+      expect('year' in result.data).toBe(false);
+    }
   });
 });
 
@@ -218,7 +154,6 @@ describe('getMockRegionProperties', () => {
       name: 'Kerala',
       country: 'India',
       countryIso: 'IND',
-      hdi: 0.782,
     });
     expect(mock.gdlCode).toBe('INDr101');
     expect(mock.name).toBe('Kerala');
@@ -227,6 +162,6 @@ describe('getMockRegionProperties', () => {
   });
 
   it('should throw when overrides produce invalid data', () => {
-    expect(() => getMockRegionProperties({ hdi: -1 })).toThrow();
+    expect(() => getMockRegionProperties({ countryIso: 'XX' } as never)).toThrow();
   });
 });

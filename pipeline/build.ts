@@ -74,11 +74,6 @@ const run = (): void => {
             country: record.country,
             countryIso: record.countryIso,
             level: record.level,
-            year: record.year,
-            hdi: record.hdi,
-            educationIndex: record.educationIndex,
-            healthIndex: record.healthIndex,
-            incomeIndex: record.incomeIndex,
             centroid: roundedCentroid,
           }
         : {
@@ -87,11 +82,6 @@ const run = (): void => {
             country: '',
             countryIso: props['iso_code'] ?? '',
             level: LEVEL_FROM_CODE(gdlCode),
-            year: 0,
-            hdi: null,
-            educationIndex: null,
-            healthIndex: null,
-            incomeIndex: null,
             centroid: roundedCentroid,
           };
 
@@ -134,8 +124,7 @@ const run = (): void => {
   log(`  Output: ${OUTPUT_PATH} (${(stats.length / 1024 / 1024).toFixed(1)} MB)`);
 
   log('Extracting HDI values...');
-  const allProperties = enrichedGeometries.map((g) => g.properties as RegionProperties);
-  const hdiValues = extractHdiValues(allProperties);
+  const hdiValues = extractHdiValues(records);
   const hdiValuesPath = `${OUTPUT_DIR}/hdi-values.json`;
   writeFileSync(hdiValuesPath, JSON.stringify(hdiValues));
   const hdiStats = readFileSync(hdiValuesPath);

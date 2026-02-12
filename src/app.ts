@@ -1,7 +1,7 @@
 import { loadMapData } from './data-loader';
 import { createColorScale, NO_DATA_COLOR, type Bin } from './color-scale';
 import { createMapRenderer, type MapRenderer } from './map-renderer';
-import { formatTooltipContent } from './tooltip';
+import { formatHdiTooltip } from './tooltip';
 import { searchRegions, buildSearchIndex, type SearchIndex } from './region-search';
 import { PALETTES, DEFAULT_PALETTE_ID, getPaletteById, type PaletteId } from './palette-registry';
 import { getRegionSource } from './region-supplements';
@@ -364,8 +364,13 @@ export const initApp = async (container: HTMLElement): Promise<void> => {
       onRegionHover: (feature, event) => {
         if (feature) {
           const rect = mapContainer.getBoundingClientRect();
+          const gdlCode = feature.properties.gdlCode;
           tooltipController.show(
-            formatTooltipContent(feature.properties, getRegionSource(feature.properties.gdlCode)),
+            formatHdiTooltip({
+              properties: feature.properties,
+              hdiValue: hdiValues[gdlCode],
+              source: getRegionSource(gdlCode),
+            }),
             event.clientX - rect.left,
             event.clientY - rect.top
           );

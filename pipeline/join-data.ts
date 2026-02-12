@@ -51,11 +51,6 @@ const buildUnmatchedProperties = (
   country: '',
   countryIso: feature.properties.iso_code,
   level: deriveLevel(feature.properties.gdlcode),
-  year: 0,
-  hdi: null,
-  educationIndex: null,
-  healthIndex: null,
-  incomeIndex: null,
   centroid,
 });
 
@@ -68,11 +63,6 @@ const buildMatchedProperties = (
   country: record.country,
   countryIso: record.countryIso,
   level: record.level,
-  year: record.year,
-  hdi: record.hdi,
-  educationIndex: record.educationIndex,
-  healthIndex: record.healthIndex,
-  incomeIndex: record.incomeIndex,
   centroid,
 });
 
