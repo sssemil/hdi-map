@@ -67,14 +67,16 @@ export const loadMapData = async (url: string): Promise<LoadResult> => {
 
   const regionsObject = topology.objects['regions'] as GeometryCollection<GeoJsonProperties>;
   const featureCollection = feature(topology, regionsObject) as FeatureCollection<GeoJSON.Geometry, RegionProperties>;
-  const regions = featureCollection.features as RegionFeature[];
+  const rawRegions = featureCollection.features as RegionFeature[];
 
-  for (const supplement of REGION_SUPPLEMENTS) {
-    const target = regions.find((r) => r.properties.gdlCode === supplement.gdlCode);
-    if (target) {
-      target.properties = supplement.properties;
-    }
-  }
+  const supplementsByCode = new Map(
+    REGION_SUPPLEMENTS.map((s) => [s.gdlCode, s.properties])
+  );
+
+  const regions = rawRegions.map((r) => {
+    const supplementProps = supplementsByCode.get(r.properties.gdlCode);
+    return supplementProps ? { ...r, properties: supplementProps } : r;
+  });
 
   validateSampleFeatures(regions);
 
