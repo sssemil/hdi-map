@@ -1,4 +1,6 @@
+import { initApp } from './app';
+
 const app = document.getElementById('app');
 if (app) {
-  app.dataset.loaded = 'true';
+  initApp(app);
 }
