@@ -6,11 +6,12 @@ import { searchRegions, buildSearchIndex, type SearchIndex } from './region-sear
 import { PALETTES, DEFAULT_PALETTE_ID, getPaletteById, type PaletteId } from './palette-registry';
 import { getRegionSource } from './region-supplements';
 import { createValueLoader } from './value-loader';
-import { getIndexById, DEFAULT_INDEX_ID, INDICES, type IndexId, type IndexDefinition } from './index-registry';
+import { getIndexById, INDICES, type IndexId, type IndexDefinition } from './index-registry';
 import { createGetValue } from './get-value-accessor';
 import { EQUAL_WEIGHTS, redistributeWeights, normalizeWeights, type DimensionWeights } from './weighted-average';
 import type { HdiValues } from './schemas/hdi-values.schema';
 import type { RegionProperties } from './schemas/region-properties.schema';
+import { parseUrlHash, toUrlHash } from './url-state';
 
 const DATA_URL = `${import.meta.env.BASE_URL}data/regions.topo.json`;
 
@@ -571,20 +572,29 @@ export const initApp = async (container: HTMLElement): Promise<void> => {
 
   try {
     const valueLoader = createValueLoader();
-    let currentIndexDef = getIndexById(DEFAULT_INDEX_ID);
+    const initialUrlState = parseUrlHash(window.location.hash);
+    const initialIndexId = initialUrlState.indexId;
+
+    let currentIndexDef = getIndexById(initialIndexId);
     let currentPaletteId = DEFAULT_PALETTE_ID;
-    let currentDimensionId: string | undefined;
+    let currentDimensionId: string | undefined = initialUrlState.dimensionId;
 
     const [{ regions }, initialValues] = await Promise.all([
       loadMapData(DATA_URL),
-      valueLoader.loadValues(DEFAULT_INDEX_ID),
+      valueLoader.loadValues(initialIndexId),
     ]);
 
     loading.remove();
 
+    const updateUrlHash = (): void => {
+      const hash = toUrlHash({ indexId: currentIndexDef.id, dimensionId: currentDimensionId });
+      history.replaceState(null, '', hash);
+    };
+
     let currentGetValue = createGetValue({
-      indexId: DEFAULT_INDEX_ID,
+      indexId: initialIndexId,
       values: initialValues,
+      dimensionId: currentDimensionId,
     });
 
     let currentScale = createColorScale({
@@ -680,9 +690,10 @@ export const initApp = async (container: HTMLElement): Promise<void> => {
       } else {
         weightSliders.hide();
       }
+      updateUrlHash();
     });
 
-    createIndexSwitcher(mapContainer, DEFAULT_INDEX_ID, async (indexId) => {
+    createIndexSwitcher(mapContainer, initialIndexId, async (indexId) => {
       const newIndexDef = getIndexById(indexId);
       const values = await valueLoader.loadValues(indexId);
 
@@ -700,6 +711,7 @@ export const initApp = async (container: HTMLElement): Promise<void> => {
         dimensionSelector.hide();
         weightSliders.hide();
       }
+      updateUrlHash();
     });
 
     createPalettePicker(mapContainer, (paletteId) => {
@@ -721,6 +733,15 @@ export const initApp = async (container: HTMLElement): Promise<void> => {
     });
 
     createInfoPanel(mapContainer);
+
+    if (currentIndexDef.dimensions) {
+      dimensionSelector.show(currentIndexDef.dimensions);
+      if (!currentDimensionId) {
+        weightSliders.show();
+      }
+    }
+
+    updateUrlHash();
 
     window.addEventListener('resize', () => {
       renderer.resize();
