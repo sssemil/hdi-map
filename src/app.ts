@@ -44,6 +44,7 @@ const createTooltipController = (container: HTMLElement) => {
 
 const createLegend = (
   container: HTMLElement,
+  legendTitle: string,
   bins: readonly Bin[],
   onBinHover: (filter: { min: number; max: number } | null) => void
 ): HTMLElement => {
@@ -55,7 +56,7 @@ const createLegend = (
     'border:1px solid rgba(255,255,255,0.1);z-index:50';
 
   const title = document.createElement('div');
-  title.textContent = 'Human Development Index';
+  title.textContent = legendTitle;
   title.style.cssText = 'font-weight:600;margin-bottom:8px;color:#e0e0e0;font-size:13px';
   legend.appendChild(title);
 
@@ -371,14 +372,14 @@ export const initApp = async (container: HTMLElement): Promise<void> => {
       renderer.highlightRegions(filter);
     };
 
-    let legendElement = createLegend(mapContainer, currentScale.bins, onBinHover);
+    let legendElement = createLegend(mapContainer, 'Human Development Index', currentScale.bins, onBinHover);
 
     createPalettePicker(mapContainer, (paletteId) => {
       const palette = getPaletteById(paletteId);
       currentScale = createColorScale({ interpolator: palette.interpolator, binDefinitions: HDI_BIN_DEFINITIONS });
       renderer.updateColors(currentScale.getColor);
       legendElement.remove();
-      legendElement = createLegend(mapContainer, currentScale.bins, onBinHover);
+      legendElement = createLegend(mapContainer, 'Human Development Index', currentScale.bins, onBinHover);
     });
 
     const searchableRegions = regions.map((f) => ({
