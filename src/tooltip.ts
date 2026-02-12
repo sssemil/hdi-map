@@ -3,27 +3,27 @@ import { classifyHdi } from './hdi-classification';
 
 const formatTitle = (properties: RegionProperties): string => {
   if (properties.level === 'national' || properties.name === properties.country) {
-    return `<strong>${properties.name}</strong>`;
+    return `<div><strong>${properties.name}</strong></div>`;
   }
-  return `<strong>${properties.name}</strong>, ${properties.country}`;
+  return `<div><strong>${properties.name}</strong>, ${properties.country}</div>`;
 };
 
 const formatHdiLine = (properties: RegionProperties): string => {
-  if (properties.hdi === null) return '<span>No data available</span>';
+  if (properties.hdi === null) return '<div>No data available</div>';
   const category = classifyHdi(properties.hdi);
-  return `<span>HDI: ${properties.hdi.toFixed(3)} (${category})</span>`;
+  return `<div>HDI: ${properties.hdi.toFixed(3)} (${category})</div>`;
 };
 
 const formatSubIndices = (properties: RegionProperties): string => {
   const lines: readonly string[] = [
     properties.educationIndex !== null
-      ? `<span>Education: ${properties.educationIndex.toFixed(3)}</span>`
+      ? `<div>Education: ${properties.educationIndex.toFixed(3)}</div>`
       : '',
     properties.healthIndex !== null
-      ? `<span>Health: ${properties.healthIndex.toFixed(3)}</span>`
+      ? `<div>Health: ${properties.healthIndex.toFixed(3)}</div>`
       : '',
     properties.incomeIndex !== null
-      ? `<span>Income: ${properties.incomeIndex.toFixed(3)}</span>`
+      ? `<div>Income: ${properties.incomeIndex.toFixed(3)}</div>`
       : '',
   ].filter(Boolean);
 
@@ -32,7 +32,7 @@ const formatSubIndices = (properties: RegionProperties): string => {
 
 const formatNationalNote = (properties: RegionProperties): string => {
   if (properties.level !== 'national') return '';
-  return '<span class="tooltip-note">Country-level data</span>';
+  return '<div class="tooltip-note">Country-level data</div>';
 };
 
 export const formatTooltipContent = (properties: RegionProperties): string => {

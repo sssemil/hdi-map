@@ -5,6 +5,7 @@ import {
   RegionPropertiesSchema,
   type RegionProperties,
 } from './schemas/region-properties.schema';
+import { REGION_SUPPLEMENTS } from './region-supplements';
 
 type RegionFeature = GeoJSON.Feature<GeoJSON.Geometry, RegionProperties>;
 
@@ -67,6 +68,13 @@ export const loadMapData = async (url: string): Promise<LoadResult> => {
   const regionsObject = topology.objects['regions'] as GeometryCollection<GeoJsonProperties>;
   const featureCollection = feature(topology, regionsObject) as FeatureCollection<GeoJSON.Geometry, RegionProperties>;
   const regions = featureCollection.features as RegionFeature[];
+
+  for (const supplement of REGION_SUPPLEMENTS) {
+    const target = regions.find((r) => r.properties.gdlCode === supplement.gdlCode);
+    if (target) {
+      target.properties = supplement.properties;
+    }
+  }
 
   validateSampleFeatures(regions);
 

@@ -1,8 +1,9 @@
 import { loadMapData } from './data-loader';
-import { getColor, HDI_BINS, NO_DATA_COLOR } from './color-scale';
+import { createColorScale, NO_DATA_COLOR, type HdiBin } from './color-scale';
 import { createMapRenderer, type MapRenderer } from './map-renderer';
 import { formatTooltipContent } from './tooltip';
 import { searchRegions, buildSearchIndex, type SearchIndex } from './region-search';
+import { PALETTES, DEFAULT_PALETTE_ID, getPaletteById, type PaletteId } from './palette-registry';
 const DATA_URL = `${import.meta.env.BASE_URL}data/regions.topo.json`;
 
 const createTooltipController = (container: HTMLElement) => {
@@ -42,8 +43,9 @@ const createTooltipController = (container: HTMLElement) => {
 
 const createLegend = (
   container: HTMLElement,
+  bins: readonly HdiBin[],
   onBinHover: (filter: { min: number; max: number } | null) => void
-): void => {
+): HTMLElement => {
   const legend = document.createElement('div');
   legend.className = 'legend';
   legend.style.cssText =
@@ -56,7 +58,7 @@ const createLegend = (
   title.style.cssText = 'font-weight:600;margin-bottom:8px;color:#e0e0e0;font-size:13px';
   legend.appendChild(title);
 
-  HDI_BINS.forEach((bin) => {
+  bins.forEach((bin) => {
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:3px 0;cursor:pointer;border-radius:3px';
 
@@ -92,6 +94,7 @@ const createLegend = (
   legend.appendChild(noDataRow);
 
   container.appendChild(legend);
+  return legend;
 };
 
 const createSearchUI = (
@@ -187,6 +190,99 @@ const createSearchUI = (
   container.appendChild(wrapper);
 };
 
+const createPalettePicker = (
+  container: HTMLElement,
+  onChange: (paletteId: PaletteId) => void
+): void => {
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText =
+    'position:absolute;top:16px;left:16px;z-index:50';
+
+  const select = document.createElement('select');
+  select.style.cssText =
+    'padding:6px 10px;background:rgba(10,10,46,0.9);color:#e0e0e0;' +
+    'border:1px solid rgba(255,255,255,0.15);border-radius:6px;font-size:13px;' +
+    'cursor:pointer;outline:none';
+
+  PALETTES.forEach((p) => {
+    const option = document.createElement('option');
+    option.value = p.id;
+    option.textContent = p.label;
+    option.selected = p.id === DEFAULT_PALETTE_ID;
+    select.appendChild(option);
+  });
+
+  select.addEventListener('change', () => {
+    onChange(select.value as PaletteId);
+  });
+
+  wrapper.appendChild(select);
+  container.appendChild(wrapper);
+};
+
+const createInfoPanel = (container: HTMLElement): void => {
+  const overlay = document.createElement('div');
+  overlay.className = 'info-overlay';
+  overlay.style.cssText =
+    'display:none;position:absolute;inset:0;background:rgba(0,0,0,0.5);z-index:200;' +
+    'align-items:center;justify-content:center';
+
+  const panel = document.createElement('div');
+  panel.className = 'info-panel';
+  panel.style.cssText =
+    'background:rgba(10,10,46,0.95);color:#e0e0e0;padding:24px 28px;border-radius:10px;' +
+    'max-width:420px;width:90%;border:1px solid rgba(255,255,255,0.15);' +
+    'box-shadow:0 8px 32px rgba(0,0,0,0.6);font-size:13px;line-height:1.6';
+
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = '\u00d7';
+  closeBtn.style.cssText =
+    'float:right;background:none;border:none;color:#888;font-size:22px;cursor:pointer;' +
+    'padding:0 0 0 12px;line-height:1';
+
+  const title = document.createElement('h3');
+  title.textContent = 'Data Sources';
+  title.style.cssText = 'margin:0 0 14px;font-size:15px;color:#fff';
+
+  const content = document.createElement('div');
+  content.innerHTML = [
+    '<div style="margin-bottom:10px"><strong>HDI Data</strong><br>Global Data Lab, Subnational HDI v8.3<br>' +
+      '<span style="color:#888">Zenodo DOI: 10.5281/zenodo.17467221</span></div>',
+    '<div style="margin-bottom:10px"><strong>Boundaries</strong><br>GDL Shapefiles V6.5</div>',
+    '<div style="margin-bottom:10px"><strong>Taiwan &amp; Hong Kong</strong><br>Taiwan: DGBAS (Statistics Bureau); Hong Kong: UNDP HDR<br>' +
+      '<span style="color:#888">HDI calculated per UNDP methodology</span></div>',
+    '<div style="margin-bottom:10px"><strong>Projection</strong><br>Robinson (via d3-geo-projection)</div>',
+    '<div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:10px;margin-top:10px;color:#888;font-size:12px">' +
+      'Data provided for non-commercial use.<br>Attribution: Global Data Lab.</div>',
+  ].join('');
+
+  panel.appendChild(closeBtn);
+  panel.appendChild(title);
+  panel.appendChild(content);
+  overlay.appendChild(panel);
+  container.appendChild(overlay);
+
+  const button = document.createElement('button');
+  button.className = 'info-button';
+  button.textContent = 'i';
+  button.style.cssText =
+    'position:absolute;bottom:24px;right:24px;z-index:50;width:32px;height:32px;' +
+    'border-radius:50%;background:rgba(10,10,46,0.85);color:#e0e0e0;border:1px solid rgba(255,255,255,0.15);' +
+    'font-size:16px;font-style:italic;font-family:Georgia,serif;cursor:pointer;' +
+    'display:flex;align-items:center;justify-content:center';
+  container.appendChild(button);
+
+  const toggleOverlay = (show: boolean): void => {
+    overlay.style.display = show ? 'flex' : 'none';
+  };
+
+  button.addEventListener('click', () => toggleOverlay(true));
+  closeBtn.addEventListener('click', () => toggleOverlay(false));
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) toggleOverlay(false);
+  });
+};
+
 const showLoadingState = (container: HTMLElement): HTMLElement => {
   const loading = document.createElement('div');
   loading.className = 'loading-state';
@@ -236,12 +332,16 @@ export const initApp = async (container: HTMLElement): Promise<void> => {
 
     loading.remove();
 
+    let currentScale = createColorScale(
+      getPaletteById(DEFAULT_PALETTE_ID).interpolator
+    );
+
     const tooltipController = createTooltipController(mapContainer);
 
     const renderer: MapRenderer = createMapRenderer({
       container: mapContainer,
       regions,
-      getColor,
+      getColor: currentScale.getColor,
       onRegionHover: (feature, event) => {
         if (feature) {
           const rect = mapContainer.getBoundingClientRect();
@@ -258,8 +358,18 @@ export const initApp = async (container: HTMLElement): Promise<void> => {
 
     renderer.render();
 
-    createLegend(mapContainer, (filter) => {
+    const onBinHover = (filter: { min: number; max: number } | null): void => {
       renderer.highlightRegions(filter);
+    };
+
+    let legendElement = createLegend(mapContainer, currentScale.bins, onBinHover);
+
+    createPalettePicker(mapContainer, (paletteId) => {
+      const palette = getPaletteById(paletteId);
+      currentScale = createColorScale(palette.interpolator);
+      renderer.updateColors(currentScale.getColor);
+      legendElement.remove();
+      legendElement = createLegend(mapContainer, currentScale.bins, onBinHover);
     });
 
     const searchableRegions = regions.map((f) => ({
@@ -274,6 +384,8 @@ export const initApp = async (container: HTMLElement): Promise<void> => {
       renderer.highlightSingle(gdlCode);
       setTimeout(() => renderer.highlightSingle(null), 3000);
     });
+
+    createInfoPanel(mapContainer);
 
     window.addEventListener('resize', () => {
       renderer.resize();

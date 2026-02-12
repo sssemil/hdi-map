@@ -108,4 +108,51 @@ describe('formatTooltipContent', () => {
     const matches = html.match(/Singapore/g);
     expect(matches).toHaveLength(1);
   });
+
+  it('should wrap each content line in a div for block-level layout', () => {
+    const props = getMockRegionProperties({
+      name: 'Ile-de-France',
+      country: 'France',
+      hdi: 0.921,
+      educationIndex: 0.89,
+      healthIndex: 0.95,
+      incomeIndex: 0.91,
+      level: 'subnational',
+    });
+    const html = formatTooltipContent(props);
+
+    expect(html).toContain('<div><strong>Ile-de-France</strong>, France</div>');
+    expect(html).toContain('<div>HDI: 0.921 (Very High)</div>');
+    expect(html).toContain('<div>Education: 0.890</div>');
+    expect(html).toContain('<div>Health: 0.950</div>');
+    expect(html).toContain('<div>Income: 0.910</div>');
+  });
+
+  it('should wrap national note in a div', () => {
+    const props = getMockRegionProperties({
+      name: 'North Korea',
+      country: 'North Korea',
+      hdi: 0.733,
+      level: 'national',
+      educationIndex: null,
+      healthIndex: null,
+      incomeIndex: null,
+    });
+    const html = formatTooltipContent(props);
+
+    expect(html).toContain('<div class="tooltip-note">Country-level data</div>');
+  });
+
+  it('should wrap no-data message in a div', () => {
+    const props = getMockRegionProperties({
+      name: 'Unknown',
+      hdi: null,
+      educationIndex: null,
+      healthIndex: null,
+      incomeIndex: null,
+    });
+    const html = formatTooltipContent(props);
+
+    expect(html).toContain('<div>No data available</div>');
+  });
 });

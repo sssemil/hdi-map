@@ -23,12 +23,48 @@ const buildMockTopology = () => ({
             countryIso: 'IND',
           }),
         },
+        {
+          type: 'Polygon',
+          arcs: [[2]],
+          properties: getMockRegionProperties({
+            gdlCode: 'CHNr132',
+            name: 'CHNr132',
+            country: '',
+            countryIso: 'CHN',
+            level: 'subnational',
+            year: 0,
+            hdi: null,
+            educationIndex: null,
+            healthIndex: null,
+            incomeIndex: null,
+            centroid: [114.134, 22.384],
+          }),
+        },
+        {
+          type: 'Polygon',
+          arcs: [[3]],
+          properties: getMockRegionProperties({
+            gdlCode: 'CHNr133',
+            name: 'CHNr133',
+            country: '',
+            countryIso: 'CHN',
+            level: 'subnational',
+            year: 0,
+            hdi: null,
+            educationIndex: null,
+            healthIndex: null,
+            incomeIndex: null,
+            centroid: [120.955, 23.748],
+          }),
+        },
       ],
     },
   },
   arcs: [
     [[0, 0], [9999, 0], [0, 9999], [-9999, 0], [0, -9999]],
     [[100, 100], [9999, 0], [0, 9999], [-9999, 0], [0, -9999]],
+    [[200, 200], [9999, 0], [0, 9999], [-9999, 0], [0, -9999]],
+    [[300, 300], [9999, 0], [0, 9999], [-9999, 0], [0, -9999]],
   ],
   transform: {
     scale: [0.001, 0.001],
@@ -49,7 +85,7 @@ describe('loadMapData', () => {
 
     const result = await loadMapData('/data/regions.topo.json');
 
-    expect(result.regions).toHaveLength(2);
+    expect(result.regions).toHaveLength(4);
     expect(result.regions[0].properties.gdlCode).toBe('GBRr101');
     expect(result.regions[1].properties.gdlCode).toBe('INDr101');
     expect(result.regions[0].type).toBe('Feature');
@@ -115,6 +151,46 @@ describe('loadMapData', () => {
     await expect(loadMapData('/data/bad.json')).rejects.toThrow(
       /regions/i
     );
+
+    vi.unstubAllGlobals();
+  });
+
+  it('should patch CHNr133 with Taiwan HDI data', async () => {
+    const mockTopology = buildMockTopology();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockTopology),
+      })
+    );
+
+    const result = await loadMapData('/data/regions.topo.json');
+
+    const taiwan = result.regions.find((r) => r.properties.gdlCode === 'CHNr133');
+    expect(taiwan).toBeDefined();
+    expect(taiwan!.properties.name).toBe('Taiwan');
+    expect(taiwan!.properties.hdi).toBe(0.926);
+
+    vi.unstubAllGlobals();
+  });
+
+  it('should patch CHNr132 with Hong Kong HDI data', async () => {
+    const mockTopology = buildMockTopology();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockTopology),
+      })
+    );
+
+    const result = await loadMapData('/data/regions.topo.json');
+
+    const hk = result.regions.find((r) => r.properties.gdlCode === 'CHNr132');
+    expect(hk).toBeDefined();
+    expect(hk!.properties.name).toBe('Hong Kong');
+    expect(hk!.properties.hdi).toBe(0.956);
 
     vi.unstubAllGlobals();
   });
