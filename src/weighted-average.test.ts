@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeWeightedAverage, normalizeWeights, EQUAL_WEIGHTS, type DimensionWeights } from './weighted-average';
+import { computeWeightedAverage, normalizeWeights, redistributeWeights, EQUAL_WEIGHTS, type DimensionWeights } from './weighted-average';
 import { getMockOecdBliRegionValue } from './schemas/oecd-bli-values.schema';
 
 describe('EQUAL_WEIGHTS', () => {
@@ -61,6 +61,97 @@ describe('normalizeWeights', () => {
     const normalized = normalizeWeights(EQUAL_WEIGHTS);
     const sum = Object.values(normalized).reduce((s, v) => s + v, 0);
     expect(sum).toBeCloseTo(1.0, 10);
+  });
+});
+
+describe('redistributeWeights', () => {
+  it('should set changed dimension to new percentage and redistribute rest', () => {
+    const result = redistributeWeights({
+      currentWeights: EQUAL_WEIGHTS,
+      changedKey: 'income',
+      newPercentage: 50,
+    });
+
+    expect(result.income).toBeCloseTo(50, 5);
+    const otherSum = Object.entries(result)
+      .filter(([k]) => k !== 'income')
+      .reduce((sum, [, v]) => sum + v, 0);
+    expect(otherSum).toBeCloseTo(50, 5);
+  });
+
+  it('should maintain total of 100', () => {
+    const result = redistributeWeights({
+      currentWeights: EQUAL_WEIGHTS,
+      changedKey: 'health',
+      newPercentage: 30,
+    });
+
+    const total = Object.values(result).reduce((s, v) => s + v, 0);
+    expect(total).toBeCloseTo(100, 5);
+  });
+
+  it('should preserve relative proportions of unchanged dimensions', () => {
+    const unequalWeights: DimensionWeights = {
+      income: 20, jobs: 10, housing: 10, education: 10, health: 10,
+      environment: 10, safety: 10, civicEngagement: 5, accessToServices: 5,
+      community: 5, lifeSatisfaction: 5,
+    };
+    const normalized = normalizeWeights(unequalWeights);
+
+    const result = redistributeWeights({
+      currentWeights: normalized,
+      changedKey: 'income',
+      newPercentage: 40,
+    });
+
+    expect(result.jobs / result.housing).toBeCloseTo(1.0, 5);
+    expect(result.civicEngagement / result.community).toBeCloseTo(1.0, 5);
+  });
+
+  it('should set all others to 0 when changed to 100', () => {
+    const result = redistributeWeights({
+      currentWeights: EQUAL_WEIGHTS,
+      changedKey: 'income',
+      newPercentage: 100,
+    });
+
+    expect(result.income).toBeCloseTo(100, 5);
+    const otherKeys = Object.keys(result).filter((k) => k !== 'income') as (keyof DimensionWeights)[];
+    for (const key of otherKeys) {
+      expect(result[key]).toBeCloseTo(0, 5);
+    }
+  });
+
+  it('should distribute evenly among others when changed to 0', () => {
+    const result = redistributeWeights({
+      currentWeights: EQUAL_WEIGHTS,
+      changedKey: 'income',
+      newPercentage: 0,
+    });
+
+    expect(result.income).toBeCloseTo(0, 5);
+    const otherKeys = Object.keys(result).filter((k) => k !== 'income') as (keyof DimensionWeights)[];
+    for (const key of otherKeys) {
+      expect(result[key]).toBeCloseTo(10, 5);
+    }
+  });
+
+  it('should handle edge case where all other weights are zero', () => {
+    const allOnIncome: DimensionWeights = {
+      income: 1, jobs: 0, housing: 0, education: 0, health: 0,
+      environment: 0, safety: 0, civicEngagement: 0, accessToServices: 0,
+      community: 0, lifeSatisfaction: 0,
+    };
+
+    const result = redistributeWeights({
+      currentWeights: allOnIncome,
+      changedKey: 'income',
+      newPercentage: 50,
+    });
+
+    expect(result.income).toBeCloseTo(50, 5);
+    const total = Object.values(result).reduce((s, v) => s + v, 0);
+    expect(total).toBeCloseTo(100, 5);
   });
 });
 

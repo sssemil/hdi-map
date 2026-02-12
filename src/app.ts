@@ -8,6 +8,7 @@ import { getRegionSource } from './region-supplements';
 import { createValueLoader } from './value-loader';
 import { getIndexById, DEFAULT_INDEX_ID, INDICES, type IndexId, type IndexDefinition } from './index-registry';
 import { createGetValue } from './get-value-accessor';
+import { EQUAL_WEIGHTS, redistributeWeights, normalizeWeights, type DimensionWeights } from './weighted-average';
 import type { HdiValues } from './schemas/hdi-values.schema';
 import type { RegionProperties } from './schemas/region-properties.schema';
 
@@ -302,6 +303,140 @@ const createDimensionSelector = (
   };
 };
 
+type WeightSliderPanel = {
+  readonly show: () => void;
+  readonly hide: () => void;
+  readonly getWeights: () => DimensionWeights;
+};
+
+const SLIDER_LABELS: readonly { key: keyof DimensionWeights; label: string }[] = [
+  { key: 'income', label: 'Income' },
+  { key: 'jobs', label: 'Jobs' },
+  { key: 'housing', label: 'Housing' },
+  { key: 'education', label: 'Education' },
+  { key: 'health', label: 'Health' },
+  { key: 'environment', label: 'Environment' },
+  { key: 'safety', label: 'Safety' },
+  { key: 'civicEngagement', label: 'Civic Eng.' },
+  { key: 'accessToServices', label: 'Access Svc.' },
+  { key: 'community', label: 'Community' },
+  { key: 'lifeSatisfaction', label: 'Life Sat.' },
+];
+
+const createWeightSliders = (
+  container: HTMLElement,
+  onChange: (weights: DimensionWeights) => void
+): WeightSliderPanel => {
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText =
+    'position:absolute;top:124px;left:16px;z-index:50;display:none;' +
+    'background:rgba(10,10,46,0.9);border:1px solid rgba(255,255,255,0.15);' +
+    'border-radius:8px;padding:10px 14px;width:220px;max-height:400px;overflow-y:auto';
+
+  let currentPercentages = Object.fromEntries(
+    SLIDER_LABELS.map(({ key }) => [key, 100 / 11])
+  ) as Record<keyof DimensionWeights, number>;
+
+  const sliderElements: Record<string, { slider: HTMLInputElement; label: HTMLSpanElement }> = {};
+
+  const updateDisplay = (): void => {
+    for (const { key } of SLIDER_LABELS) {
+      const el = sliderElements[key];
+      if (el) {
+        el.slider.value = String(Math.round(currentPercentages[key]));
+        el.label.textContent = `${Math.round(currentPercentages[key])}%`;
+      }
+    }
+  };
+
+  let debounceTimer: ReturnType<typeof setTimeout>;
+
+  const handleSliderChange = (changedKey: keyof DimensionWeights, rawValue: number): void => {
+    const currentWeightsNormalized = normalizeWeights(
+      Object.fromEntries(
+        SLIDER_LABELS.map(({ key }) => [key, currentPercentages[key]])
+      ) as unknown as DimensionWeights
+    );
+
+    const result = redistributeWeights({
+      currentWeights: currentWeightsNormalized,
+      changedKey,
+      newPercentage: rawValue,
+    });
+
+    currentPercentages = { ...result } as Record<keyof DimensionWeights, number>;
+    updateDisplay();
+
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      const normalized = normalizeWeights(
+        Object.fromEntries(
+          SLIDER_LABELS.map(({ key }) => [key, currentPercentages[key]])
+        ) as unknown as DimensionWeights
+      );
+      onChange(normalized);
+    }, 80);
+  };
+
+  SLIDER_LABELS.forEach(({ key, label }) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:11px;color:#ccc';
+
+    const labelEl = document.createElement('span');
+    labelEl.textContent = label;
+    labelEl.style.cssText = 'width:64px;flex-shrink:0;text-align:right';
+
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.min = '0';
+    slider.max = '100';
+    slider.value = String(Math.round(100 / 11));
+    slider.style.cssText = 'flex:1;height:4px;cursor:pointer;accent-color:#cc4778';
+
+    const pctLabel = document.createElement('span');
+    pctLabel.textContent = `${Math.round(100 / 11)}%`;
+    pctLabel.style.cssText = 'width:30px;text-align:right;font-size:10px;color:#888';
+
+    slider.addEventListener('input', () => {
+      handleSliderChange(key, Number(slider.value));
+    });
+
+    sliderElements[key] = { slider, label: pctLabel };
+
+    row.appendChild(labelEl);
+    row.appendChild(slider);
+    row.appendChild(pctLabel);
+    wrapper.appendChild(row);
+  });
+
+  const resetBtn = document.createElement('button');
+  resetBtn.textContent = 'Reset';
+  resetBtn.style.cssText =
+    'width:100%;margin-top:6px;padding:4px;background:rgba(255,255,255,0.08);' +
+    'color:#ccc;border:1px solid rgba(255,255,255,0.15);border-radius:4px;' +
+    'font-size:11px;cursor:pointer';
+  resetBtn.addEventListener('click', () => {
+    currentPercentages = Object.fromEntries(
+      SLIDER_LABELS.map(({ key }) => [key, 100 / 11])
+    ) as Record<keyof DimensionWeights, number>;
+    updateDisplay();
+    onChange(EQUAL_WEIGHTS);
+  });
+  wrapper.appendChild(resetBtn);
+
+  container.appendChild(wrapper);
+
+  return {
+    show: () => { wrapper.style.display = 'block'; },
+    hide: () => { wrapper.style.display = 'none'; },
+    getWeights: () => normalizeWeights(
+      Object.fromEntries(
+        SLIDER_LABELS.map(({ key }) => [key, currentPercentages[key]])
+      ) as unknown as DimensionWeights
+    ),
+  };
+};
+
 const formatGenericTooltip = (
   properties: RegionProperties,
   value: number | null,
@@ -511,6 +646,22 @@ export const initApp = async (container: HTMLElement): Promise<void> => {
       legendElement = createLegend(mapContainer, currentIndexDef.legendTitle, currentScale.bins, onBinHover);
     };
 
+    let currentWeights = EQUAL_WEIGHTS;
+
+    const weightSliders = createWeightSliders(mapContainer, (weights) => {
+      currentWeights = weights;
+      const values = valueLoader.getCachedValues('oecd-bli');
+      if (values) {
+        currentGetValue = createGetValue({
+          indexId: 'oecd-bli',
+          values,
+          weights: currentWeights,
+        });
+        renderer.updateValues(currentGetValue);
+        rebuildScale();
+      }
+    });
+
     const dimensionSelector = createDimensionSelector(mapContainer, (dimensionId) => {
       currentDimensionId = dimensionId === 'weighted-average' ? undefined : dimensionId;
       const values = valueLoader.getCachedValues('oecd-bli');
@@ -519,9 +670,15 @@ export const initApp = async (container: HTMLElement): Promise<void> => {
           indexId: 'oecd-bli',
           values,
           dimensionId: currentDimensionId,
+          weights: currentWeights,
         });
         renderer.updateValues(currentGetValue);
         rebuildScale();
+      }
+      if (!currentDimensionId) {
+        weightSliders.show();
+      } else {
+        weightSliders.hide();
       }
     });
 
@@ -531,15 +688,17 @@ export const initApp = async (container: HTMLElement): Promise<void> => {
 
       currentIndexDef = newIndexDef;
       currentDimensionId = undefined;
-      currentGetValue = createGetValue({ indexId, values });
+      currentGetValue = createGetValue({ indexId, values, weights: currentWeights });
 
       renderer.updateValues(currentGetValue);
       rebuildScale();
 
       if (newIndexDef.dimensions) {
         dimensionSelector.show(newIndexDef.dimensions);
+        weightSliders.show();
       } else {
         dimensionSelector.hide();
+        weightSliders.hide();
       }
     });
 

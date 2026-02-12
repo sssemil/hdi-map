@@ -34,6 +34,29 @@ export const normalizeWeights = (weights: DimensionWeights): DimensionWeights =>
   ) as unknown as DimensionWeights;
 };
 
+type RedistributeWeightsOptions = {
+  readonly currentWeights: DimensionWeights;
+  readonly changedKey: keyof DimensionWeights;
+  readonly newPercentage: number;
+};
+
+export const redistributeWeights = (options: RedistributeWeightsOptions): DimensionWeights => {
+  const { currentWeights, changedKey, newPercentage } = options;
+  const remaining = 100 - newPercentage;
+
+  const otherKeys = DIMENSION_KEYS.filter((k) => k !== changedKey);
+  const otherTotal = otherKeys.reduce((sum, k) => sum + currentWeights[k], 0);
+
+  const otherEntries = otherTotal > 0
+    ? otherKeys.map((k) => [k, (currentWeights[k] / otherTotal) * remaining] as const)
+    : otherKeys.map((k) => [k, remaining / otherKeys.length] as const);
+
+  return Object.fromEntries([
+    [changedKey, newPercentage],
+    ...otherEntries,
+  ]) as unknown as DimensionWeights;
+};
+
 type ComputeWeightedAverageOptions = {
   readonly values: OecdBliRegionValue;
   readonly weights: DimensionWeights;
