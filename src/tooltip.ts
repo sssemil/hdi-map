@@ -1,6 +1,8 @@
 import type { RegionProperties } from './schemas/region-properties.schema';
 import { classifyHdi } from './hdi-classification';
 
+export type TooltipFormatter = (properties: RegionProperties, source?: string) => string;
+
 const formatTitle = (properties: RegionProperties): string => {
   if (properties.level === 'national' || properties.name === properties.country) {
     return `<div><strong>${properties.name}</strong></div>`;
@@ -40,7 +42,7 @@ const formatSource = (source?: string): string => {
   return `<div class="tooltip-source">Source: ${source}</div>`;
 };
 
-export const formatTooltipContent = (properties: RegionProperties, source?: string): string => {
+export const formatHdiTooltip: TooltipFormatter = (properties: RegionProperties, source?: string): string => {
   const title = formatTitle(properties);
   const hdiLine = formatHdiLine(properties);
   const subIndices = formatSubIndices(properties);
@@ -49,3 +51,5 @@ export const formatTooltipContent = (properties: RegionProperties, source?: stri
 
   return [title, hdiLine, subIndices, note, sourceLine].filter(Boolean).join('');
 };
+
+export const formatTooltipContent = formatHdiTooltip;

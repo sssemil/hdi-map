@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatTooltipContent } from './tooltip';
+import { formatTooltipContent, formatHdiTooltip, type TooltipFormatter } from './tooltip';
 import { getMockRegionProperties } from './schemas/region-properties.schema';
 
 describe('formatTooltipContent', () => {
@@ -187,5 +187,24 @@ describe('formatTooltipContent', () => {
     const html = formatTooltipContent(props);
 
     expect(html).not.toContain('Source:');
+  });
+});
+
+describe('formatHdiTooltip', () => {
+  it('should satisfy the TooltipFormatter type', () => {
+    const formatter: TooltipFormatter = formatHdiTooltip;
+    expect(typeof formatter).toBe('function');
+  });
+
+  it('should produce the same output as formatTooltipContent', () => {
+    const props = getMockRegionProperties({
+      name: 'Bavaria',
+      country: 'Germany',
+      hdi: 0.921,
+      educationIndex: 0.89,
+      healthIndex: 0.95,
+      incomeIndex: 0.91,
+    });
+    expect(formatHdiTooltip(props, 'GDL')).toBe(formatTooltipContent(props, 'GDL'));
   });
 });
