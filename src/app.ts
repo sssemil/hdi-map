@@ -1,10 +1,14 @@
 import { loadMapData } from './data-loader';
-import { createColorScale, NO_DATA_COLOR, HDI_BIN_DEFINITIONS, type Bin } from './color-scale';
+import { createColorScale, NO_DATA_COLOR, type Bin } from './color-scale';
 import { createMapRenderer, type MapRenderer } from './map-renderer';
 import { formatTooltipContent } from './tooltip';
 import { searchRegions, buildSearchIndex, type SearchIndex } from './region-search';
 import { PALETTES, DEFAULT_PALETTE_ID, getPaletteById, type PaletteId } from './palette-registry';
 import { getRegionSource } from './region-supplements';
+import { createValueLoader } from './value-loader';
+import { getIndexById, DEFAULT_INDEX_ID } from './index-registry';
+import type { HdiValues } from './schemas/hdi-values.schema';
+
 const DATA_URL = `${import.meta.env.BASE_URL}data/regions.topo.json`;
 
 const createTooltipController = (container: HTMLElement) => {
@@ -332,20 +336,25 @@ export const initApp = async (container: HTMLElement): Promise<void> => {
   const loading = showLoadingState(mapContainer);
 
   try {
-    const { regions } = await loadMapData(DATA_URL);
+    const valueLoader = createValueLoader();
+    const indexDef = getIndexById(DEFAULT_INDEX_ID);
+
+    const [{ regions }, hdiValues] = await Promise.all([
+      loadMapData(DATA_URL),
+      valueLoader.loadValues(DEFAULT_INDEX_ID) as Promise<HdiValues>,
+    ]);
 
     loading.remove();
 
     let currentScale = createColorScale({
       interpolator: getPaletteById(DEFAULT_PALETTE_ID).interpolator,
-      binDefinitions: HDI_BIN_DEFINITIONS,
+      binDefinitions: indexDef.binDefinitions,
     });
 
     const tooltipController = createTooltipController(mapContainer);
 
-    const regionMap = new Map(regions.map((r) => [r.properties.gdlCode, r.properties]));
-    const hdiGetValue = (_gdlCode: string, _countryIso: string): number | null =>
-      regionMap.get(_gdlCode)?.hdi ?? null;
+    const hdiGetValue = (gdlCode: string, _countryIso: string): number | null =>
+      hdiValues[gdlCode]?.hdi ?? null;
 
     const renderer: MapRenderer = createMapRenderer({
       container: mapContainer,
@@ -372,14 +381,14 @@ export const initApp = async (container: HTMLElement): Promise<void> => {
       renderer.highlightRegions(filter);
     };
 
-    let legendElement = createLegend(mapContainer, 'Human Development Index', currentScale.bins, onBinHover);
+    let legendElement = createLegend(mapContainer, indexDef.legendTitle, currentScale.bins, onBinHover);
 
     createPalettePicker(mapContainer, (paletteId) => {
       const palette = getPaletteById(paletteId);
-      currentScale = createColorScale({ interpolator: palette.interpolator, binDefinitions: HDI_BIN_DEFINITIONS });
+      currentScale = createColorScale({ interpolator: palette.interpolator, binDefinitions: indexDef.binDefinitions });
       renderer.updateColors(currentScale.getColor);
       legendElement.remove();
-      legendElement = createLegend(mapContainer, 'Human Development Index', currentScale.bins, onBinHover);
+      legendElement = createLegend(mapContainer, indexDef.legendTitle, currentScale.bins, onBinHover);
     });
 
     const searchableRegions = regions.map((f) => ({
