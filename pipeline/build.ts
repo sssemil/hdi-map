@@ -6,6 +6,7 @@ import { geoCentroid } from 'd3-geo';
 import { parseShdiCsv } from './parse-shdi';
 import type { ShdiRecord } from './parse-shdi';
 import type { RegionProperties } from '../src/schemas/region-properties.schema';
+import { extractHdiValues } from './extract-hdi-values';
 
 const SPIKE_DATA_DIR = 'spike/data';
 const CSV_PATH = `${SPIKE_DATA_DIR}/SHDI-v8.3.csv`;
@@ -128,6 +129,15 @@ const run = (): void => {
 
   const stats = readFileSync(OUTPUT_PATH);
   log(`  Output: ${OUTPUT_PATH} (${(stats.length / 1024 / 1024).toFixed(1)} MB)`);
+
+  log('Extracting HDI values...');
+  const allProperties = enrichedGeometries.map((g) => g.properties as RegionProperties);
+  const hdiValues = extractHdiValues(allProperties);
+  const hdiValuesPath = `${OUTPUT_DIR}/hdi-values.json`;
+  writeFileSync(hdiValuesPath, JSON.stringify(hdiValues));
+  const hdiStats = readFileSync(hdiValuesPath);
+  log(`  Output: ${hdiValuesPath} (${(hdiStats.length / 1024).toFixed(1)} KB, ${Object.keys(hdiValues).length} regions)`);
+
   log('Pipeline build complete!');
 };
 
