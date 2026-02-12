@@ -8,6 +8,7 @@ import type { ShdiRecord } from './parse-shdi';
 import type { RegionProperties } from '../src/schemas/region-properties.schema';
 import { extractHdiValues } from './extract-hdi-values';
 import { extractWhrValues, type WhrExcelRow } from './extract-whr-values';
+import { extractOecdValues, type OecdExcelRow } from './extract-oecd-values';
 import XLSX from 'xlsx';
 
 const SPIKE_DATA_DIR = 'spike/data';
@@ -155,6 +156,41 @@ const run = (): void => {
     log(`  Output: ${whrPath} (${(whrStats.length / 1024).toFixed(1)} KB, ${Object.keys(whrValues).length} countries)`);
   } catch (e) {
     log(`  WHR build skipped: ${e instanceof Error ? e.message : String(e)}`);
+  }
+
+  log('Building OECD BLI values...');
+  try {
+    const oecdWb = XLSX.readFile(`${SPIKE_DATA_DIR}/OECD-Regional-Well-Being-Data-File.xlsx`);
+    const oecdWs = oecdWb.Sheets['Score_Last'];
+    const oecdRaw = XLSX.utils.sheet_to_json(oecdWs, { header: 1 }) as unknown[][];
+    const oecdRows: OecdExcelRow[] = oecdRaw.slice(8)
+      .filter((r) => r[3])
+      .map((r) => ({
+        country: r[1] as string,
+        region: r[2] as string,
+        code: r[3] as string,
+        income: r[4] as number,
+        jobs: r[5] as number,
+        housing: r[6] as number,
+        education: r[7] as number,
+        health: r[8] as number,
+        environment: r[9] as number,
+        safety: r[10] as number,
+        civicEngagement: r[11] as number,
+        accessToServices: r[12] as number,
+        community: r[13] as number,
+        lifeSatisfaction: r[14] as number,
+      }));
+    const oecdCountryToIso: Record<string, string> = JSON.parse(
+      readFileSync('pipeline/data/oecd-country-to-iso.json', 'utf-8')
+    );
+    const oecdValues = extractOecdValues(oecdRows, oecdCountryToIso);
+    const oecdPath = `${OUTPUT_DIR}/oecd-bli-values.json`;
+    writeFileSync(oecdPath, JSON.stringify(oecdValues));
+    const oecdStats = readFileSync(oecdPath);
+    log(`  Output: ${oecdPath} (${(oecdStats.length / 1024).toFixed(1)} KB, ${Object.keys(oecdValues).length} countries)`);
+  } catch (e) {
+    log(`  OECD build skipped: ${e instanceof Error ? e.message : String(e)}`);
   }
 
   log('Pipeline build complete!');
