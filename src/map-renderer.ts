@@ -135,9 +135,9 @@ export const createMapRenderer = (options: MapRendererOptions): MapRenderer => {
       .selectAll<SVGPathElement, RegionFeature>('path')
       .attr('opacity', (d) => {
         if (filter === null) return 1;
-        const hdi = d.properties.hdi;
-        if (hdi === null) return 0.15;
-        return hdi >= filter.min && hdi < filter.max ? 1 : 0.15;
+        const value = currentGetValue(d.properties.gdlCode, d.properties.countryIso);
+        if (value === null) return 0.15;
+        return value >= filter.min && value < filter.max ? 1 : 0.15;
       });
   };
 
