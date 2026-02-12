@@ -18,25 +18,23 @@ export type IndexDefinition = {
 };
 
 const WHR_BIN_DEFINITIONS: readonly BinDefinition[] = [
-  { min: 0, max: 2, samplePoint: 0.0, label: 'Very Low (< 2.0)' },
-  { min: 2, max: 3, samplePoint: 0.14, label: 'Low (2.0 - 2.9)' },
-  { min: 3, max: 4, samplePoint: 0.28, label: 'Below Average (3.0 - 3.9)' },
-  { min: 4, max: 5, samplePoint: 0.42, label: 'Average (4.0 - 4.9)' },
-  { min: 5, max: 6, samplePoint: 0.57, label: 'Above Average (5.0 - 5.9)' },
-  { min: 6, max: 7, samplePoint: 0.71, label: 'High (6.0 - 6.9)' },
-  { min: 7, max: 8, samplePoint: 0.85, label: 'Very High (7.0 - 7.9)' },
-  { min: 8, max: 10, samplePoint: 1.0, label: 'Exceptional (8.0+)' },
+  { min: 0, max: 3, samplePoint: 0.0, label: 'Very Low (< 3.0)' },
+  { min: 3, max: 4, samplePoint: 0.17, label: 'Low (3.0 \u2013 3.9)' },
+  { min: 4, max: 5, samplePoint: 0.33, label: 'Below Average (4.0 \u2013 4.9)' },
+  { min: 5, max: 5.5, samplePoint: 0.5, label: 'Average (5.0 \u2013 5.4)' },
+  { min: 5.5, max: 6, samplePoint: 0.67, label: 'Above Average (5.5 \u2013 5.9)' },
+  { min: 6, max: 7, samplePoint: 0.83, label: 'High (6.0 \u2013 6.9)' },
+  { min: 7, max: 10, samplePoint: 1.0, label: 'Very High (7.0+)' },
 ];
 
 const OECD_BIN_DEFINITIONS: readonly BinDefinition[] = [
   { min: 0, max: 2, samplePoint: 0.0, label: 'Very Low (< 2.0)' },
-  { min: 2, max: 3, samplePoint: 0.14, label: 'Low (2.0 - 2.9)' },
-  { min: 3, max: 4, samplePoint: 0.28, label: 'Below Average (3.0 - 3.9)' },
-  { min: 4, max: 5, samplePoint: 0.42, label: 'Average (4.0 - 4.9)' },
-  { min: 5, max: 6, samplePoint: 0.57, label: 'Above Average (5.0 - 5.9)' },
-  { min: 6, max: 7, samplePoint: 0.71, label: 'High (6.0 - 6.9)' },
-  { min: 7, max: 8, samplePoint: 0.85, label: 'Very High (7.0 - 7.9)' },
-  { min: 8, max: 10, samplePoint: 1.0, label: 'Exceptional (8.0+)' },
+  { min: 2, max: 4, samplePoint: 0.17, label: 'Low (2.0 \u2013 3.9)' },
+  { min: 4, max: 5, samplePoint: 0.33, label: 'Below Average (4.0 \u2013 4.9)' },
+  { min: 5, max: 6, samplePoint: 0.5, label: 'Average (5.0 \u2013 5.9)' },
+  { min: 6, max: 7, samplePoint: 0.67, label: 'Above Average (6.0 \u2013 6.9)' },
+  { min: 7, max: 8.5, samplePoint: 0.83, label: 'High (7.0 \u2013 8.4)' },
+  { min: 8.5, max: 10, samplePoint: 1.0, label: 'Very High (8.5+)' },
 ];
 
 const OECD_DIMENSIONS: readonly DimensionDefinition[] = [

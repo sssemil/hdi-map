@@ -57,10 +57,26 @@ describe('HDI index definition', () => {
 });
 
 describe('WHR index definition', () => {
-  it('should have bin definitions for 0-10 scale', () => {
+  it('should have 7 bin definitions matching data distribution', () => {
     const whr = getIndexById('whr');
-    expect(whr.binDefinitions.length).toBeGreaterThan(0);
+    expect(whr.binDefinitions).toHaveLength(7);
     expect(whr.binDefinitions[0].min).toBe(0);
+    expect(whr.binDefinitions[0].max).toBe(3);
+    expect(whr.binDefinitions[whr.binDefinitions.length - 1].max).toBe(10);
+  });
+
+  it('should have contiguous bins covering full 0-10 range', () => {
+    const whr = getIndexById('whr');
+    for (let i = 1; i < whr.binDefinitions.length; i++) {
+      expect(whr.binDefinitions[i].min).toBe(whr.binDefinitions[i - 1].max);
+    }
+  });
+
+  it('should have bins matching data distribution (5-7 range concentrated)', () => {
+    const whr = getIndexById('whr');
+    const labels = whr.binDefinitions.map((b) => b.label);
+    expect(labels.some((l) => l.includes('Very Low'))).toBe(true);
+    expect(labels.some((l) => l.includes('Very High'))).toBe(true);
   });
 
   it('should have correct label', () => {
@@ -75,9 +91,18 @@ describe('WHR index definition', () => {
 });
 
 describe('OECD BLI index definition', () => {
-  it('should have bin definitions', () => {
+  it('should have 7 bin definitions covering 0-10 scale', () => {
     const oecd = getIndexById('oecd-bli');
-    expect(oecd.binDefinitions.length).toBeGreaterThan(0);
+    expect(oecd.binDefinitions).toHaveLength(7);
+    expect(oecd.binDefinitions[0].min).toBe(0);
+    expect(oecd.binDefinitions[oecd.binDefinitions.length - 1].max).toBe(10);
+  });
+
+  it('should have contiguous bins', () => {
+    const oecd = getIndexById('oecd-bli');
+    for (let i = 1; i < oecd.binDefinitions.length; i++) {
+      expect(oecd.binDefinitions[i].min).toBe(oecd.binDefinitions[i - 1].max);
+    }
   });
 
   it('should have correct label', () => {
