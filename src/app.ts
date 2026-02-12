@@ -491,14 +491,21 @@ const createInfoPanel = (container: HTMLElement): void => {
   content.innerHTML = [
     '<div style="margin-bottom:10px"><strong>HDI Data</strong><br>Global Data Lab, Subnational HDI v8.3<br>' +
       '<span style="color:#888">Zenodo DOI: 10.5281/zenodo.17467221</span></div>',
+    '<div style="margin-bottom:10px"><strong>World Happiness Report</strong><br>' +
+      'Helliwell et al. (2025), <em>World Happiness Report 2025</em><br>' +
+      '<span style="color:#888">Country-level Cantril Ladder scores</span></div>',
+    '<div style="margin-bottom:10px"><strong>OECD Better Life Index</strong><br>' +
+      'OECD Regional Well-Being<br>' +
+      '<span style="color:#888">Licensed under CC BY 4.0</span></div>',
     '<div style="margin-bottom:10px"><strong>Boundaries</strong><br>GDL Shapefiles V6.5</div>',
-    '<div style="margin-bottom:10px"><strong>Supplemental HDI</strong><br>' +
+    '<div style="margin-bottom:10px"><strong>Supplemental</strong><br>' +
       'Taiwan: DGBAS (Statistics Bureau)<br>' +
       'Hong Kong, San Marino: UNDP HDR<br>' +
       '<span style="color:#888">HDI calculated per UNDP methodology</span></div>',
     '<div style="margin-bottom:10px"><strong>Projection</strong><br>Robinson (via d3-geo-projection)</div>',
     '<div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:10px;margin-top:10px;color:#888;font-size:12px">' +
-      'Data provided for non-commercial use.<br>Attribution: Global Data Lab.</div>',
+      'HDI data for non-commercial use. Attribution: Global Data Lab.<br>' +
+      'OECD data licensed under CC BY 4.0.</div>',
   ].join('');
 
   panel.appendChild(closeBtn);
@@ -624,6 +631,7 @@ export const initApp = async (container: HTMLElement): Promise<void> => {
     const updateUrlHash = (): void => {
       const hash = toUrlHash({ indexId: currentIndexDef.id, dimensionId: currentDimensionId });
       history.replaceState(null, '', hash);
+      document.title = `Global Well-Being Map \u2014 ${currentIndexDef.label}`;
     };
 
     let currentGetValue = createGetValue({
@@ -709,6 +717,17 @@ export const initApp = async (container: HTMLElement): Promise<void> => {
 
     let legendElement = createLegend(mapContainer, currentIndexDef.legendTitle, currentScale.bins, onBinHover);
 
+    const coverageNote = document.createElement('div');
+    coverageNote.textContent = 'Data available for OECD member countries only';
+    coverageNote.style.cssText =
+      'position:absolute;bottom:8px;left:24px;z-index:50;font-size:11px;color:#777;display:none';
+    mapContainer.appendChild(coverageNote);
+
+    const updateCoverageNote = (): void => {
+      coverageNote.style.display = currentIndexDef.id === 'oecd-bli' ? 'block' : 'none';
+    };
+    updateCoverageNote();
+
     const rebuildScale = (): void => {
       currentScale = createColorScale({
         interpolator: getPaletteById(currentPaletteId).interpolator,
@@ -717,6 +736,7 @@ export const initApp = async (container: HTMLElement): Promise<void> => {
       renderer.updateColors(currentScale.getColor);
       legendElement.remove();
       legendElement = createLegend(mapContainer, currentIndexDef.legendTitle, currentScale.bins, onBinHover);
+      updateCoverageNote();
     };
 
     let currentWeights = EQUAL_WEIGHTS;
